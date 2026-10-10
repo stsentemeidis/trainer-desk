@@ -131,6 +131,26 @@ input:hover,select:hover,textarea:hover{border-color:var(--ink-3)}
 input.w-s{width:64px}input.w-m{width:96px}input.w-l{width:130px}
 .c-ex{min-width:210px}.c-note{min-width:180px}.c-act{white-space:nowrap}
 .tabs{overflow-x:auto}
+.namewrap{display:flex;align-items:center;gap:4px;min-width:0}
+.namewrap .dayname{flex:1;min-width:0;margin-left:0}
+.tgl svg{transition:transform .15s}
+.tgl[aria-expanded="true"] svg{transform:rotate(90deg)}
+.daysum{color:var(--ink-3);font-size:13px;white-space:nowrap}
+.foldall{gap:18px;margin-bottom:-12px}
+.daypeek{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;color:var(--ink-2);cursor:pointer;font:inherit;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.daypeek:hover{border-color:var(--ink-3);color:var(--ink)}
+.pickbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;border:1px solid transparent;border-radius:var(--r);padding:7px 9px;cursor:pointer;font:inherit;font-weight:600;color:var(--ink)}
+.pickbtn svg{color:var(--ink-3);flex:none}
+.pickbtn:hover,.pickbtn:focus-visible{border-color:var(--field-line);background:var(--field)}
+.pkbar{align-items:flex-end}
+.pkbar .field:not(.grow){width:190px}
+.picklist{max-height:min(50vh,440px);overflow-y:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--field)}
+.pkgroup{position:sticky;top:0;background:var(--sunken);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:6px 12px}
+.pkitem{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:11px 12px;cursor:pointer;font:inherit;color:var(--ink)}
+.pkitem:hover,.pkitem:focus-visible{background:var(--accent-soft)}
+.pkitem em{font-style:normal;font-size:12.5px;color:var(--good);font-weight:600;white-space:nowrap}
+.pkitem.new{color:var(--link);font-weight:600}
+@media (prefers-reduced-motion:reduce){ .tgl svg{transition:none} }
 .exfilter{align-items:flex-end}
 .exfilter .field:not(.grow){width:230px}
 .exfilter .grow{max-width:420px}
@@ -235,6 +255,11 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
   .tab{flex:1;text-align:center;padding-inline:4px}
   .clshead .grow{flex-basis:100%}
   .clshead input[type=date]{flex:1 1 100%}
+  .t.prog.cards .pickbtn{border-color:var(--field-line);background:var(--field);min-height:44px;padding-inline:12px}
+  .pkbar .field{flex:1 1 100%!important;width:auto!important}
+  .picklist{max-height:46vh}
+  .pkitem{min-height:46px}
+  .daysum{display:none}
   .exfilter .field{flex:1 1 100%!important;width:auto!important;max-width:none!important}
   .range .field{flex:1 1 40%;width:auto;min-width:0}
   .range .icon{order:2;width:44px;height:44px}
@@ -268,6 +293,7 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
   .t.prog.cards tr{grid-template-columns:1fr 1.25fr 1.15fr 1.15fr}
   .t.prog.cards .c-ex,.t.prog.cards .c-note,.t.prog.cards .c-act{grid-column:1 / -1}
   .t.prog.cards .c-ex select{font-weight:600}
+  .modal.wide{width:100%}
   .t.prog.cards .c-act{display:flex;justify-content:flex-end;gap:4px;margin-top:-4px}
   .t.prog.cards input,.t.prog.cards select{border-color:var(--field-line);background:var(--field)}
   .t.prog.cards input.num,.t.log.cards input.num{text-align:left}
@@ -680,18 +706,37 @@ function vClient(c){
   return h;
 }
 
+/* Which days and classes are open is remembered per browser. */
+const OKEY = 'trainer-desk:open';
+let openMap = {}; try { openMap = JSON.parse(ls.get(OKEY) || '{}') || {}; } catch (e) { openMap = {}; }
+const isOpen = (key, def) => (key in openMap ? !!openMap[key] : !!def);
+function setOpen(key, v){
+  openMap[key] = v ? 1 : 0; const ks = Object.keys(openMap);
+  if (ks.length > 400) ks.slice(0, ks.length - 400).forEach(k => { delete openMap[k]; });
+  ls.set(OKEY, JSON.stringify(openMap));
+}
+const CHEV = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const DOWN = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const peek = names => names.length ? names.slice(0, 4).join(' · ') + (names.length > 4 ? '  +' + (names.length - 4) + ' more' : '') : 'No exercises yet';
+const toggleBtn = (key, def, open, name) => '<button class="btn quiet icon tgl" id="tg-' + key.replace(/[^A-Za-z0-9]/g, '-') + '" data-act="toggle" data-key="' + key + '" data-def="' + (def ? 1 : 0) + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Collapse ' : 'Expand ') + esc(name) + '">' + CHEV + '</button>';
+const pickBtn = (id, attrs, name) => '<button type="button" class="pickbtn" id="' + id + '" data-act="pick" ' + attrs + ' aria-label="Change exercise, now ' + name + '"><span>' + name + '</span>' + DOWN + '</button>';
+
 function vProgram(c){
   const first = esc(c.name.split(' ')[0]);
   let h = '<div class="row tools"><p class="hint grow">Swap or edit any exercise here. Everything already logged for an exercise stays in the client\'s history.</p>' +
     '<button class="btn" data-act="m-email">Email to ' + first + '</button><button class="btn primary" data-act="pdf"' + (c.days.length ? '' : ' disabled') + '>Download PDF</button></div>';
   if (!c.days.length) h += '<div class="empty"><h2 class="h">No training days yet</h2><p>Add a day, then pick its exercises from your library.</p></div>';
-  c.days.forEach(d => {
-    h += '<section class="day"><div class="row"><div class="grow"><input type="text" class="dayname" id="dn-' + d.id + '" data-c="dayname" data-day="' + d.id + '" value="' + esc(d.name) + '" aria-label="Name of this training day"></div>' +
-      cbtn('delday-' + d.id, 'delday', 'Delete day', 'data-day="' + d.id + '"') + '</div>' +
-      '<div class="scroll cardwrap"><table class="t prog cards"><thead><tr><th>Exercise</th><th class="n">Sets</th><th>Reps</th><th class="n">Load, kg</th><th>Rest</th><th>Notes</th><th></th></tr></thead><tbody>';
+  if (c.days.length > 1) h += '<div class="row foldall"><button class="link" data-act="alldays" data-v="1">Expand all</button><button class="link" data-act="alldays" data-v="0">Collapse all</button></div>';
+  c.days.forEach((d, di) => {
+    const key = 'd:' + c.id + ':' + d.id, def = di === 0, open = isOpen(key, def);
+    h += '<section class="day' + (open ? '' : ' shut') + '"><div class="row"><div class="grow namewrap">' + toggleBtn(key, def, open, d.name) +
+      '<input type="text" class="dayname" id="dn-' + d.id + '" data-c="dayname" data-day="' + d.id + '" value="' + esc(d.name) + '" aria-label="Name of this training day"></div>' +
+      '<span class="daysum">' + d.items.length + (d.items.length === 1 ? ' exercise' : ' exercises') + '</span>' + cbtn('delday-' + d.id, 'delday', 'Delete day', 'data-day="' + d.id + '"') + '</div>';
+    if (!open) { h += '<button class="daypeek" data-act="toggle" data-key="' + key + '" data-def="' + (def ? 1 : 0) + '">' + esc(peek(d.items.map(it => exName(it.ex)))) + '</button></section>'; return; }
+    h += '<div class="scroll cardwrap"><table class="t prog cards"><thead><tr><th>Exercise</th><th class="n">Sets</th><th>Reps</th><th class="n">Load, kg</th><th>Rest</th><th>Notes</th><th></th></tr></thead><tbody>';
     d.items.forEach((it, i) => {
       const a = 'data-c="item" data-day="' + d.id + '" data-item="' + it.id + '"', n = esc(exName(it.ex));
-      h += '<tr><td class="c-ex"><select id="i-' + it.id + '-ex" ' + a + ' data-k="ex" aria-label="Exercise">' + exOptions(it.ex) + '</select></td>' +
+      h += '<tr><td class="c-ex">' + pickBtn('i-' + it.id + '-ex', 'data-day="' + d.id + '" data-item="' + it.id + '"', n) + '</td>' +
         '<td data-l="Sets"><input class="num w-s" type="number" inputmode="decimal" min="1" step="1" id="i-' + it.id + '-sets" ' + a + ' data-k="sets" value="' + esc(it.sets) + '" aria-label="Sets for ' + n + '"></td>' +
         '<td data-l="Reps"><input class="w-l" type="text" id="i-' + it.id + '-reps" ' + a + ' data-k="reps" value="' + esc(it.reps) + '" aria-label="Reps for ' + n + '"></td>' +
         '<td data-l="Load, kg"><input class="num w-m" type="number" inputmode="decimal" min="0" step="0.5" placeholder="body" id="i-' + it.id + '-load" ' + a + ' data-k="load" value="' + fnum(it.load) + '" aria-label="Load for ' + n + '"></td>' +
@@ -702,9 +747,41 @@ function vProgram(c){
         '<button class="btn quiet icon danger" data-act="delitem" data-day="' + d.id + '" data-item="' + it.id + '" aria-label="Remove ' + n + '">×</button></td></tr>';
     });
     if (!d.items.length) h += '<tr><td colspan="7" class="muted">No exercises in this day yet.</td></tr>';
-    h += '</tbody></table></div><div class="addrow"><select id="add-' + d.id + '" data-c="additem" data-day="' + d.id + '" aria-label="Add an exercise to ' + esc(d.name) + '"><option value="">Add an exercise…</option>' + exOptions('', true) + '</select></div></section>';
+    h += '</tbody></table></div><div class="addrow"><button class="btn" id="add-' + d.id + '" data-act="pick" data-day="' + d.id + '">Add exercises</button></div></section>';
   });
   return h + '<div><button class="btn" data-act="addday">Add a training day</button></div>';
+}
+
+/* --- exercise picker: one search box over the whole library --- */
+const plainText = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const groupOf = id => (S.exercises[id] && S.exercises[id].group) || 'Other';
+function pickTarget(m){
+  if (m.cls) { const hit = findClass(m.cls); return hit ? {label:hit.c.name, items:hit.c.items, hit} : null; }
+  const c = cur(), d = c && c.days.find(x => x.id === m.day); return d ? {label:d.name, items:d.items, c, d} : null;
+}
+function paintPick(){
+  const m = ui.modal, box = $('pk-list'); if (!m || m.type !== 'pick' || !box) return;
+  const tgt = pickTarget(m); if (!tgt) return closeModal();
+  const raw = $('pk-q').value.trim(), q = plainText(raw), g = $('pk-g').value, has = {}; tgt.items.forEach(it => { has[it.ex] = it.id; });
+  const all = Object.keys(S.exercises), ids = all.filter(id => (!g || groupOf(id) === g) && (!q || plainText(exName(id)).includes(q)));
+  const groups = GROUPS.concat(all.map(groupOf).filter((x, i, a) => !GROUPS.includes(x) && a.indexOf(x) === i));
+  let h = '', n = 0;
+  groups.forEach(gr => { const list = ids.filter(id => groupOf(id) === gr).sort((a, b) => exName(a).localeCompare(exName(b))); if (!list.length) return;
+    h += '<div class="pkgroup">' + esc(gr) + '</div>';
+    list.forEach(id => { n++; h += '<button type="button" class="pkitem" data-act="pickit" data-ex="' + esc(id) + '"><span>' + esc(exName(id)) + '</span>' + (has[id] ? '<em>' + (m.item && has[id] === m.item ? 'Current' : 'In this ' + (m.cls ? 'class' : 'day')) + '</em>' : '') + '</button>'; }); });
+  if (raw && !all.some(id => plainText(exName(id)) === q)) h += '<button type="button" class="pkitem new" data-act="picknew">Create “' + esc(raw) + '” as a new exercise' + (g ? ' in ' + esc(g) : '') + '</button>';
+  if (!h) h = '<p class="hint" style="padding:12px">Nothing in this group yet.</p>';
+  box.innerHTML = h; $('pk-count').textContent = n + (n === 1 ? ' exercise' : ' exercises');
+}
+function pickApply(ex){
+  const m = ui.modal; if (!m || m.type !== 'pick') return; const tgt = pickTarget(m); if (!tgt) return closeModal();
+  if (m.item) { const it = tgt.items.find(i => i.id === m.item); if (it) it.ex = ex; }
+  else if (m.cls) tgt.items.push({id:uid(), ex, reps:'', time:'', load:'', rest:'', note:''});
+  else { const p = liftSeries(tgt.c, ex); tgt.items.push({id:uid(), ex, sets:3, reps:'10', load:p.length ? p[p.length - 1].y : null, rest:'', note:''}); }
+  if (m.cls) saveWeek(tgt.hit.w); else { ui.draft = null; saveClient(tgt.c); }
+  if (m.item) { closeModal(); render(); return; }
+  toast(exName(ex) + ' added'); render();
+  const box = $('pk-q'); if (box) { box.value = ''; box.focus(); } paintPick();
 }
 
 function newDraft(c, dayId){
@@ -935,25 +1012,28 @@ function vClasses(){
       (src ? '<button class="btn" style="white-space:normal;text-align:left" data-act="copyweek" data-from="' + src + '">Copy the classes from ' + rangeLabel(src, addDays(src, 6)) + '</button>' : '') + '</div></div>';
   }
   h += '<div style="max-width:420px">' + field('Heading on the PDF, for example the gym\'s name', '<input type="text" id="ctitle" data-c="classtitle" value="' + esc(S.settings.classTitle || '') + '" placeholder="Class program">') + '</div>';
+  if (list.length > 1) h += '<div class="row foldall"><button class="link" data-act="allcls" data-v="1">Expand all</button><button class="link" data-act="allcls" data-v="0">Collapse all</button></div>';
   let last = '';
   list.forEach(e => {
     if (e.date !== last) { last = e.date; h += '<h2 class="dayhead">' + dayName(e.date) + '<span>' + fmtShort(e.date) + '</span></h2>'; }
-    h += classCard(e.c, e.date);
+    h += classCard(e.c, e.date, list.length <= 3);
   });
   return h + '<div class="row"><button class="btn" data-act="addclass">Add a class</button></div>';
 }
-function classCard(c, date){
-  const a = 'data-c="cfield" data-class="' + c.id + '"', L = {reps:'Reps', time:'Time', load:'Weight', rest:'Rest'};
-  let h = '<section class="day cls"><div class="row clshead"><div class="grow"><input type="text" class="dayname" id="cn-' + c.id + '" ' + a + ' data-k="name" value="' + esc(c.name) + '" aria-label="Class name"></div>' +
+function classCard(c, date, def){
+  const a = 'data-c="cfield" data-class="' + c.id + '"', L = {reps:'Reps', time:'Time', load:'Weight', rest:'Rest'}, key = 'c:' + c.id, open = isOpen(key, def);
+  let h = '<section class="day cls' + (open ? '' : ' shut') + '"><div class="row clshead"><div class="grow namewrap">' + toggleBtn(key, def, open, c.name) +
+    '<input type="text" class="dayname" id="cn-' + c.id + '" ' + a + ' data-k="name" value="' + esc(c.name) + '" aria-label="Class name"></div>' +
     '<input type="date" id="cd-' + c.id + '" ' + a + ' data-k="date" value="' + date + '" aria-label="Date of ' + esc(c.name) + '">' +
     '<span class="times"><input type="time" id="cs-' + c.id + '" ' + a + ' data-k="start" value="' + esc(c.start) + '" aria-label="Start time of ' + esc(c.name) + '"><span>to</span>' +
     '<input type="time" id="ce-' + c.id + '" ' + a + ' data-k="end" value="' + esc(c.end) + '" aria-label="End time of ' + esc(c.name) + '"></span>' +
-    '<span class="clsbtns"><button class="btn small quiet" data-act="dupclass" data-class="' + c.id + '">Duplicate</button>' + cbtn('delc-' + c.id, 'delclass', 'Delete', 'data-class="' + c.id + '"') + '</span></div>' +
-    '<input type="text" id="co-' + c.id + '" ' + a + ' data-k="note" value="' + esc(c.note) + '" placeholder="Format or notes, for example: 4 rounds for time" aria-label="Format or notes for ' + esc(c.name) + '">' +
+    '<span class="clsbtns"><button class="btn small quiet" data-act="dupclass" data-class="' + c.id + '">Duplicate</button>' + cbtn('delc-' + c.id, 'delclass', 'Delete', 'data-class="' + c.id + '"') + '</span></div>';
+  if (!open) return h + '<button class="daypeek" data-act="toggle" data-key="' + key + '" data-def="' + (def ? 1 : 0) + '">' + esc((c.note ? c.note + '  ·  ' : '') + peek(c.items.map(it => exName(it.ex)))) + '</button></section>';
+  h += '<input type="text" id="co-' + c.id + '" ' + a + ' data-k="note" value="' + esc(c.note) + '" placeholder="Format or notes, for example: 4 rounds for time" aria-label="Format or notes for ' + esc(c.name) + '">' +
     '<div class="scroll cardwrap"><table class="t prog cards"><thead><tr><th>Exercise</th><th>Reps</th><th>Time</th><th>Weight</th><th>Rest</th><th>Notes</th><th></th></tr></thead><tbody>';
   c.items.forEach((it, i) => {
     const b = 'data-c="citem" data-class="' + c.id + '" data-item="' + it.id + '"', n = esc(exName(it.ex)), mv = 'data-class="' + c.id + '" data-item="' + it.id + '"';
-    h += '<tr><td class="c-ex"><select id="ci-' + it.id + '-ex" ' + b + ' data-k="ex" aria-label="Exercise">' + exOptions(it.ex) + '</select></td>' +
+    h += '<tr><td class="c-ex">' + pickBtn('ci-' + it.id + '-ex', mv, n) + '</td>' +
       Object.keys(L).map(k => '<td data-l="' + L[k] + '"><input class="' + (k === 'reps' || k === 'load' ? 'w-l' : 'w-m') + '" type="text" id="ci-' + it.id + '-' + k + '" ' + b + ' data-k="' + k + '" value="' + esc(it[k]) + '" aria-label="' + L[k] + ' for ' + n + '"></td>').join('') +
       '<td class="c-note"><input type="text" placeholder="Note" id="ci-' + it.id + '-note" ' + b + ' data-k="note" value="' + esc(it.note) + '" aria-label="Notes for ' + n + '"></td>' +
       '<td class="c-act"><button class="btn quiet icon" id="cu-' + it.id + '" data-act="movecitem" ' + mv + ' data-dir="-1" aria-label="Move ' + n + ' up"' + (i ? '' : ' disabled') + '>↑</button>' +
@@ -961,7 +1041,7 @@ function classCard(c, date){
       '<button class="btn quiet icon danger" data-act="delcitem" ' + mv + ' aria-label="Remove ' + n + '">×</button></td></tr>';
   });
   if (!c.items.length) h += '<tr><td colspan="7" class="muted">No exercises in this class yet.</td></tr>';
-  return h + '</tbody></table></div><div class="addrow"><select id="cadd-' + c.id + '" data-c="caddit" data-class="' + c.id + '" aria-label="Add an exercise to ' + esc(c.name) + '"><option value="">Add an exercise…</option>' + exOptions('', true) + '</select></div></section>';
+  return h + '</tbody></table></div><div class="addrow"><button class="btn" id="cadd-' + c.id + '" data-act="pick" data-class="' + c.id + '">Add exercises</button></div></section>';
 }
 /* The class PDF is deliberately plain: black and grey, no logo, no brand colour. */
 async function buildClassPdf(list, from, to){
@@ -1112,6 +1192,14 @@ function renderModal(){
       '<div class="grid2" id="g-custom" hidden>' + field('Name of the goal', '<input type="text" id="m-glabel" placeholder="5 km run time">') + field('Unit', '<input type="text" id="m-gunit" placeholder="min">') + '</div>' +
       '<div class="grid2">' + field('Starting point', '<input class="num" type="number" inputmode="decimal" step="0.1" id="m-gstart" required data-w="' + (w.length ? w[w.length - 1].y : '') + '">') + field('Target', '<input class="num" type="number" inputmode="decimal" step="0.1" id="m-gtarget" required>') + '</div>' +
       '<div class="grid2">' + field('Start date', '<input type="date" id="m-gfrom" required value="' + today() + '">') + field('Reach it by', '<input type="date" id="m-gby" required>') + '</div>' + foot('Add goal') + '</form>';
+  } else if (m.type === 'pick') {
+    const tgt = pickTarget(m); if (!tgt) { ui.modal = null; $('modal').innerHTML = ''; return; }
+    const all = Object.keys(S.exercises), groups = GROUPS.concat(all.map(groupOf).filter((x, i, a) => !GROUPS.includes(x) && a.indexOf(x) === i)).filter(g => all.some(id => groupOf(id) === g));
+    title = m.item ? 'Change the exercise' : 'Add exercises to ' + esc(tgt.label);
+    body = '<div class="row pkbar"><label class="field grow"><span>Search</span><input type="search" id="pk-q" data-c="pkq" placeholder="Type a name, for example press" autocomplete="off"></label>' +
+      '<label class="field"><span>Group</span><select id="pk-g" data-c="pkg"><option value="">All groups</option>' + groups.map(g => '<option>' + esc(g) + '</option>').join('') + '</select></label></div>' +
+      '<div class="picklist" id="pk-list"></div>' +
+      '<div class="row" style="justify-content:space-between"><span class="hint" id="pk-count"></span><button class="btn" data-act="close">' + (m.item ? 'Cancel' : 'Done') + '</button></div>';
   } else if (m.type === 'exercise') {
     title = 'Add an exercise';
     body = '<form data-form="exercise">' + field('Name', '<input type="text" id="m-exname" required>') + field('Group', '<select id="m-exgroup">' + GROUPS.map(g => '<option' + (g === ui.exg ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>') + foot('Add exercise') + '</form>';
@@ -1139,6 +1227,7 @@ function renderModal(){
   }
   $('modal').innerHTML = '<div class="modal-back"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="m-title"><h2 class="h" id="m-title">' + title + '</h2>' + body + '</div></div>';
   if (m.type === 'goal') goalFields();
+  if (m.type === 'pick') paintPick();
 }
 function goalFields(){
   const t = $('m-gtype').value, c = cur(); $('g-ex').hidden = t !== 'lift'; $('g-custom').hidden = t !== 'custom';
@@ -1182,8 +1271,6 @@ document.addEventListener('submit', ev => {
     const name = v('m-exname'); if (!name) return fail('Enter a name.');
     if (Object.values(S.exercises).some(e => e.name.toLowerCase() === name.toLowerCase())) return fail('That exercise is already in the library.');
     const id = uid(); S.exercises[id] = {name, group:v('m-exgroup')}; saveExercises(); toast('Exercise added');
-    if (m.then && m.then.cls) addClassItem(m.then.cls, id);
-    else if (m.then && m.then.day && cur()) { const day = cur().days.find(x => x.id === m.then.day); if (day) { day.items.push({id:uid(), ex:id, sets:3, reps:'10', load:null, rest:'', note:''}); ui.draft = null; saveClient(cur()); } }
   } else if (kind === 'settings') {
     S.settings = Object.assign({}, S.settings, {business:v('m-business'), trainer:v('m-trainer'), contact:v('m-contact'), currency:v('m-currency'), defaultRate:num(v('m-drate')) || 0}); saveSettings(); toast('Settings saved');
   }
@@ -1196,14 +1283,13 @@ document.addEventListener('change', ev => {
   if (k === 'item') { const d = c.days.find(d => d.id === el.dataset.day), it = d && d.items.find(i => i.id === el.dataset.item); if (!it) return; const f = el.dataset.k;
     it[f] = f === 'sets' ? (num(el.value) || 1) : f === 'load' ? num(el.value) : el.value.trim(); ui.draft = null; saveClient(c); }
   else if (k === 'dayname') { const d = c.days.find(d => d.id === el.dataset.day); if (d && el.value.trim()) { d.name = el.value.trim(); ui.draft = null; saveClient(c); } }
-  else if (k === 'additem') { const d = c.days.find(d => d.id === el.dataset.day); if (!d || !el.value) return; if (el.value === '__new') { el.value = ''; return openModal({type:'exercise', then:{day:d.id}}); } const p = liftSeries(c, el.value);
-    d.items.push({id:uid(), ex:el.value, sets:3, reps:'10', load:p.length ? p[p.length - 1].y : null, rest:'', note:''}); ui.draft = null; saveClient(c); render(); }
   else if (k === 'draftday') { const keep = ui.draft; ui.draft = newDraft(c, el.value); if (keep) { ui.draft.date = keep.date; ui.draft.fee = keep.fee; ui.draft.note = keep.note; ui.draft.weight = keep.weight; } render(); }
   else if (k === 'draftsync') ui.draft.sync = el.checked;
   else if (k === 'metric') { ui.metric = el.value; render(); }
   else if (k === 'goalcur') { const g = c.goals.find(g => g.id === el.dataset.goal), n = num(el.value); if (g && n != null) { g.current = n; saveClient(c); render(); } }
   else if (k === 'exname') { const e = S.exercises[el.dataset.ex]; if (e && el.value.trim()) { e.name = el.value.trim(); saveExercises(); } }
   else if (k === 'exg') { ui.exg = el.value; render(); }
+  else if (k === 'pkg') paintPick();
   else if (k === 'exgroup') { const e = S.exercises[el.dataset.ex]; if (e) { e.group = el.value; saveExercises(); render(); } }
   else if (k === 'gtype' || k === 'gex') goalFields();
   else if (k === 'cfield') { const hit = findClass(el.dataset.class); if (!hit) return; const cl = hit.c, f = el.dataset.k;
@@ -1216,7 +1302,6 @@ document.addEventListener('change', ev => {
     if (f === 'name') { if (!el.value.trim()) return; cl.name = el.value.trim(); } else cl[f] = el.value.trim();
     saveWeek(hit.w); if (f === 'start') render(); }
   else if (k === 'citem') { const hit = findClass(el.dataset.class), it = hit && hit.c.items.find(i => i.id === el.dataset.item); if (!it) return; it[el.dataset.k] = el.value.trim(); saveWeek(hit.w); }
-  else if (k === 'caddit') { if (!el.value) return; if (el.value === '__new') { el.value = ''; return openModal({type:'exercise', then:{cls:el.dataset.class}}); } addClassItem(el.dataset.class, el.value); render(); }
   else if (k === 'range') { if (!el.value) return;
     if (el.dataset.k === 'from') { ui.from = el.value; if (ui.to < ui.from) ui.to = ui.from; } else { ui.to = el.value; if (ui.to < ui.from) ui.from = ui.to; }
     if (days(ui.from, ui.to) > 92) { ui.to = addDays(ui.from, 92); toast('The range is limited to about three months.'); } render(); }
@@ -1230,11 +1315,15 @@ document.addEventListener('change', ev => {
 document.addEventListener('input', ev => {
   const el = ev.target, k = el.dataset.c, d = ui.draft;
   if (k === 'exq') { ui.exq = el.value; render(); return; }
+  if (k === 'pkq') { paintPick(); return; }
   if (!d) return;
   if (k === 'draft') { const e = d.entries[+el.dataset.i], f = el.dataset.k; if (e) e[f] = f === 'reps' ? el.value : num(el.value); }
   else if (k === 'draftmeta') d[el.dataset.k] = el.value;
 });
-document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && ui.modal) closeModal(); });
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && ui.modal) closeModal();
+  else if (ev.key === 'Enter' && ev.target.id === 'pk-q') { ev.preventDefault(); const b = $('pk-list').querySelector('.pkitem'); if (b) b.click(); }
+});
 
 /* ---------- buttons ---------- */
 document.addEventListener('click', ev => {
@@ -1260,9 +1349,9 @@ function act(name, d, el){
     case 'weeknow': ui.from = mondayOf(today()); ui.to = addDays(ui.from, 6); break;
     case 'weekafter': ui.from = addDays(mondayOf(today()), 7); ui.to = addDays(ui.from, 6); break;
     case 'addclass': { const t = today(), list = classesIn(ui.from, ui.to), date = list.length ? list[list.length - 1].date : (t >= ui.from && t <= ui.to ? t : ui.from), w = weekFor(date);
-      w.classes.push({id:uid(), name:'New class', day:(D(date).getDay() + 6) % 7, start:'18:00', end:'19:00', note:'', items:[]}); saveWeek(w); break; }
+      const nc = {id:uid(), name:'New class', day:(D(date).getDay() + 6) % 7, start:'18:00', end:'19:00', note:'', items:[]}; w.classes.push(nc); setOpen('c:' + nc.id, true); saveWeek(w); break; }
     case 'dupclass': { const hit = findClass(d.class); if (!hit) return; const n = clone(hit.c); n.id = uid(); n.items.forEach(i => { i.id = uid(); });
-      hit.w.classes.push(n); saveWeek(hit.w); toast('Class duplicated. Set its date and time.'); break; }
+      hit.w.classes.push(n); setOpen('c:' + n.id, true); saveWeek(hit.w); toast('Class duplicated. Set its date and time.'); break; }
     case 'delclass': { const hit = findClass(d.class); if (!hit) return; hit.w.classes = hit.w.classes.filter(x => x.id !== d.class); saveWeek(hit.w); break; }
     case 'copyweek': { const src = S.weeks[d.from]; if (!src) return; let n = 0;
       for (let m = mondayOf(ui.from); m <= ui.to; m = addDays(m, 7)) { if (m === src.id) continue;
@@ -1296,7 +1385,13 @@ function act(name, d, el){
     case 'delclient': if (el.dataset.step !== '2') { el.dataset.step = '2'; el.textContent = 'Confirm delete'; el.classList.add('armed'); return; }
       delete S.clients[d.id]; dropClient(d.id); ui.cid = null; ui.modal = null; renderModal(); toast('Client deleted'); break;
     case 'rmexamples': Object.values(S.clients).filter(x => x.example).forEach(x => { delete S.clients[x.id]; dropClient(x.id); }); if (LOCAL) put(); ui.cid = null; toast('Examples removed'); break;
-    case 'addday': c.days.push({id:uid(), name:'Day ' + String.fromCharCode(65 + c.days.length % 26), items:[]}); ui.draft = null; saveClient(c); break;
+    case 'addday': { const nd = {id:uid(), name:'Day ' + String.fromCharCode(65 + c.days.length % 26), items:[]}; c.days.push(nd); setOpen('d:' + c.id + ':' + nd.id, true); ui.draft = null; saveClient(c); break; }
+    case 'toggle': setOpen(d.key, !isOpen(d.key, d.def === '1')); break;
+    case 'alldays': c.days.forEach(x => setOpen('d:' + c.id + ':' + x.id, d.v === '1')); break;
+    case 'allcls': classesIn(ui.from, ui.to).forEach(e => setOpen('c:' + e.c.id, d.v === '1')); break;
+    case 'pick': return openModal({type:'pick', day:d.day || null, cls:d.class || null, item:d.item || null});
+    case 'pickit': return pickApply(d.ex);
+    case 'picknew': { const name = $('pk-q').value.trim(); if (!name) return; const id = uid(); S.exercises[id] = {name, group:$('pk-g').value || 'Other'}; saveExercises(); return pickApply(id); }
     case 'delday': c.days = c.days.filter(x => x.id !== d.day); ui.draft = null; saveClient(c); break;
     case 'delitem': { const day = c.days.find(x => x.id === d.day); day.items = day.items.filter(i => i.id !== d.item); ui.draft = null; saveClient(c); break; }
     case 'move': { const day = c.days.find(x => x.id === d.day), i = day.items.findIndex(x => x.id === d.item), j = i + (+d.dir); if (j < 0 || j >= day.items.length) return;
@@ -1347,10 +1442,11 @@ async function buildPdf(c){
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 42, s = S.settings;
   const INK = [10,10,11], INK2 = [84,84,94], LINE = [214,216,222], ACC = [61,123,255], ACCT = [36,88,214], SOFT = [243,244,247];
   doc.setFillColor.apply(doc, INK); doc.rect(0, 0, W, 76, 'F'); doc.setFillColor.apply(doc, ACC); doc.rect(0, 76, W, 4, 'F');
-  let drawn = false; try { if (window.BRAND && BRAND.logo) { doc.addImage(BRAND.logo, 'PNG', M, 22, 32 * BRAND.ratio, 32); drawn = true; } } catch (e) {}
-  if (!drawn) { doc.setFont(disp, 'bold'); doc.setFontSize(24); doc.setTextColor(255, 255, 255); doc.text('enakoma', M, 48); }
+  let drawn = false, lw = 150; try { if (window.BRAND && BRAND.logo) { lw = 32 * BRAND.ratio; doc.addImage(BRAND.logo, 'PNG', (W - lw) / 2, 22, lw, 32); drawn = true; } } catch (e) {}
+  if (!drawn) { doc.setFont(disp, 'bold'); doc.setFontSize(24); doc.setTextColor(255, 255, 255); doc.text('enakoma', W / 2, 48, {align:'center'}); }
   doc.setFont(body, 'normal'); doc.setFontSize(9.5); doc.setTextColor(200, 200, 208);
-  const side = [s.trainer, s.contact].filter(Boolean); side.forEach((t, i) => doc.text(t, W - M, (side.length > 1 ? 36 : 44) + i * 14, {align:'right'}));
+  const side = [s.trainer, s.contact].filter(Boolean); const room = W - M - (W + lw) / 2 - 14;
+  side.forEach((t, i) => { doc.setFontSize(9.5); const tw = doc.getTextWidth(t); if (tw > room) doc.setFontSize(Math.max(6.5, 9.5 * room / tw)); doc.text(t, W - M, (side.length > 1 ? 34 : 42) + i * 14, {align:'right'}); });
   let y = 116;
   doc.setFont(body, 'bold'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, ACCT); doc.text('TRAINING PROGRAM', M, y, {charSpace:1.2});
   y += 32; doc.setFont(disp, 'bold'); doc.setFontSize(30); doc.setTextColor.apply(doc, INK); doc.text(c.name, M, y);
