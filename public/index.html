@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iLTM0IC01NiAyNTIgMjUyIj48cmVjdCB4PSItMzQiIHk9Ii01NiIgd2lkdGg9IjI1MiIgaGVpZ2h0PSIyNTIiIGZpbGw9IiMwQTBBMEIiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMjQgLTMwKSI+PHBhdGggZD0iTTQ4IDEwMCBIMTg2IiBmaWxsPSJub25lIiBzdHJva2U9IiMzRDdCRkYiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik0xNjQgNzggVjEyMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM0Q3QkZGIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMTUyIDEwMCBBNTIgNTIgMCAxIDAgMTM5LjggMTMzLjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0Y0RjRGNSIgc3Ryb2tlLXdpZHRoPSIyMiIvPjwvZz48L3N2Zz4=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
 :root{color-scheme:dark}
 body{margin:0}
@@ -26,7 +26,7 @@ img{max-width:100%}
   --accent:#3D7BFF; --accent-ink:#0A0A0B; --accent-soft:#111C36; --link:#6F9DFF;
   --good:#4ADE9A; --good-soft:#0F2F22; --warn:#FFD166; --warn-soft:#3A2F0B; --bad:#FF7A70; --bad-soft:#3D1917;
   --bar:#0A0A0B; --bar-ink:#F4F4F5; --bar-ink-2:#9A9AA3; --shade:rgba(0,0,0,.72);
-  --display:"Syne","Arial Black","Segoe UI",sans-serif;
+  --display:"Manrope","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   --body:"Manrope","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   --r:8px;
 }
@@ -39,11 +39,12 @@ h1,h2,h3,p{margin:0}
 
 /* top bar */
 .top{background:var(--bar);color:var(--bar-ink);position:sticky;top:env(safe-area-inset-top,0px);z-index:5;border-bottom:1px solid var(--line)}
-.top-in{max-width:1120px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:8px 24px;flex-wrap:wrap}
+.top-in{max-width:1120px;margin:0 auto;padding-inline:20px;display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,auto) minmax(max-content,1fr);align-items:center;gap:8px 24px}
+.topright{justify-self:end;display:flex;align-items:center;gap:14px}
 .brand{display:flex;align-items:center;padding-block:15px;min-width:0;color:var(--bar-ink)}
 .brand svg{display:block;height:26px;width:auto;max-width:100%}
-.tabs{display:flex;gap:4px;flex:1;min-width:0}
-.tab{background:none;border:0;color:var(--bar-ink-2);padding:16px 12px 13px;border-bottom:3px solid transparent;cursor:pointer;font-weight:500}
+.tabs{display:flex;gap:8px;min-width:0;justify-content:center}
+.tab{background:none;border:0;color:var(--bar-ink-2);padding:18px 14px 15px;border-bottom:3px solid transparent;cursor:pointer;font-weight:500}
 .tab:hover{color:var(--bar-ink)}
 .tab[aria-current="page"]{color:var(--bar-ink);border-bottom-color:var(--accent)}
 .top .btn{background:transparent;border-color:rgba(163,175,188,.45);color:var(--bar-ink)}
@@ -54,8 +55,8 @@ h1,h2,h3,p{margin:0}
 .banner-in p{flex:1;min-width:220px}
 
 /* headings */
-.h{font-family:var(--display);font-weight:800;font-size:23px;letter-spacing:-.02em;line-height:1.15;text-wrap:balance}
-.h1{font-family:var(--display);font-weight:800;font-size:38px;letter-spacing:-.03em;line-height:1.05;text-wrap:balance;overflow-wrap:anywhere;margin-bottom:6px}
+.h{font-family:var(--display);font-weight:800;font-size:25px;letter-spacing:-.025em;line-height:1.15;text-wrap:balance}
+.h1{font-family:var(--display);font-weight:800;font-size:38px;letter-spacing:-.035em;line-height:1.05;text-wrap:balance;overflow-wrap:anywhere;margin-bottom:6px}
 .label{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
 .hint{color:var(--ink-3);font-size:13.5px;max-width:65ch;overflow-wrap:anywhere}
 a{color:var(--link)}
@@ -130,10 +131,13 @@ input:hover,select:hover,textarea:hover{border-color:var(--ink-3)}
 input.w-s{width:64px}input.w-m{width:96px}input.w-l{width:130px}
 .c-ex{min-width:210px}.c-note{min-width:180px}.c-act{white-space:nowrap}
 .tabs{overflow-x:auto}
-.weeknav .wk{font-size:17px;min-width:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.range{align-items:flex-end}
+.range .icon{width:38px;height:38px}
+.range .field{width:170px}
+.range .quick{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:38px}
 .dayhead{font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);font-weight:700;border-bottom:1px solid var(--line);padding-bottom:8px;margin:6px 0 -10px}
 .dayhead span{color:var(--ink-3);font-weight:500;letter-spacing:.04em;margin-left:10px}
-.clshead select{width:auto}
+.clshead input[type=date]{width:164px}
 .clshead .times{display:inline-flex;align-items:center;gap:8px;color:var(--ink-3)}
 .clshead input[type=time]{width:140px}
 .clshead .clsbtns{display:inline-flex;gap:4px;align-items:center}
@@ -155,7 +159,7 @@ input.num{text-align:right}
 .subtab{background:none;border:0;padding:10px 14px;cursor:pointer;color:var(--ink-2);font-weight:500;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
 .subtab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .day{display:flex;flex-direction:column;gap:8px}
-.dayname{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em;border-color:transparent!important;background:transparent!important;padding:2px 6px;margin-left:-6px;max-width:460px}
+.dayname{font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.02em;border-color:transparent!important;background:transparent!important;padding:2px 6px;margin-left:-6px;max-width:460px}
 .dayname:hover,.dayname:focus{border-color:var(--field-line)!important;background:var(--field)!important}
 .addrow select{max-width:280px}
 .goal{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) auto;gap:10px 20px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
@@ -197,11 +201,11 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
 .empty p{color:var(--ink-2);max-width:60ch}
 
 @media (max-width:760px){
-  .top-in{padding-inline:16px}.wrap{padding-inline:16px}.banner-in{padding-inline:16px}
+  .top-in{padding-inline:16px;display:flex;flex-wrap:wrap}.wrap{padding-inline:16px}.banner-in{padding-inline:16px}
   .brand{padding-block:14px 2px;flex-basis:100%}
   .brand svg{height:22px}
   .tab{padding:10px 10px 9px}
-  .h1{font-size:28px}
+  .h1{font-size:30px}
   .row > .title{flex-basis:100%}
   .figs,.figs.three{grid-template-columns:repeat(2,minmax(0,1fr))}
   .fig:nth-child(odd){padding-left:0;border-left:0}
@@ -223,12 +227,14 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
   .check input{width:22px;height:22px;min-height:0}
   .only-wide{display:none}.only-narrow{display:inline}
   .brand{order:1;flex:1 1 auto!important}
-  .sync{order:2}
-  .top .btn{order:3}
-  .tabs{order:4;flex-basis:100%;gap:0}
+  .topright{order:2}
+  .tabs{order:4;flex-basis:100%;gap:0;justify-content:flex-start}
   .tab{flex:1;text-align:center;padding-inline:4px}
   .clshead .grow{flex-basis:100%}
-  .clshead select{flex:1 1 100%}
+  .clshead input[type=date]{flex:1 1 100%}
+  .range .field{flex:1 1 40%;width:auto;min-width:0}
+  .range .icon{order:2;width:44px;height:44px}
+  .range .quick{order:3;flex:1;justify-content:flex-end}
   .clshead .times{flex:1 1 100%}
   .clshead .times input[type=time]{flex:1;width:auto;min-width:0}
   .clshead .clsbtns{margin-left:auto}
@@ -499,7 +505,7 @@ function paintSync(){
 function boot(){
   const h = (location.hash || '').slice(1);
   if (['clients','payments','exercises','classes'].includes(h)) ui.tab = h;
-  ui.week = mondayOf(today());
+  ui.from = mondayOf(today()); ui.to = addDays(ui.from, 6);
   if (LOCAL) {
     const raw = ls.get(KEY); let ok = false; S.storageOk = ls.set('trainer-desk:test', '1');
     if (raw) { try { adopt(JSON.parse(raw)); ok = true; } catch (e) {} }
@@ -602,7 +608,7 @@ function render(){
   Object.keys(chartData).forEach(k => delete chartData[k]);
   $('top').innerHTML = '<div class="brand">' + LOGO + '</div><nav class="tabs" aria-label="Sections">' +
     [['clients','Clients'],['payments','Payments'],['exercises','Exercises'],['classes','Classes']].map(t => '<button class="tab" data-act="nav" data-tab="' + t[0] + '"' + (ui.tab === t[0] ? ' aria-current="page"' : '') + '>' + t[1] + '</button>').join('') +
-    '</nav><span class="sync" id="sync"></span><button class="btn small" data-act="settings">Settings</button>';
+    '</nav><div class="topright"><span class="sync" id="sync"></span><button class="btn small" data-act="settings">Settings</button></div>';
   $('banner').innerHTML = vBanner();
   let h;
   if (S.blocked) h = '<div class="empty"><h2 class="h">' + esc(S.blocked.title) + '</h2><p>' + esc(S.blocked.text) + '</p>' + (S.blocked.again ? '<button class="btn primary" data-act="reload">' + S.blocked.again + '</button>' : '') + '</div>';
@@ -848,49 +854,67 @@ function vExercises(){
   return h + '</tbody></table></div>';
 }
 
-/* --- weekly classes (independent of clients) --- */
+/* --- classes (independent of clients) ---
+   Stored one document per week (Monday date); each class keeps its weekday. The screen and the PDF show any range of dates. */
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const CLASS_EX = [['Run','Conditioning'],['Row','Conditioning'],['SkiErg','Conditioning'],['Assault bike','Conditioning'],['Sled push','Conditioning'],['Sled pull','Conditioning'],['Burpee broad jump','Conditioning'],['Farmers carry','Conditioning'],['Sandbag lunge','Legs'],['Wall ball','Conditioning'],['Burpee','Conditioning'],['Box jump','Legs'],['Kettlebell swing','Conditioning'],['Thruster','Shoulders'],['Pull-up','Back'],['Toes to bar','Core'],['Double-under','Conditioning'],['Clean and jerk','Shoulders'],['Snatch','Shoulders'],['Air squat','Legs']];
 const addDays = (s, n) => { const d = D(s); d.setDate(d.getDate() + n); return iso(d); };
 const mondayOf = s => addDays(s, -((D(s).getDay() + 6) % 7));
-const weekLabel = w => { const a = D(w), b = D(addDays(w, 6));
-  return a.getDate() + (a.getMonth() === b.getMonth() ? '' : ' ' + a.toLocaleDateString('en-GB', {month:'short'})) + ' – ' + b.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}); };
-const weekOf = () => S.weeks[ui.week] || null;
-const saveWeek = w => put('week:' + w.id, w);
-const sortedClasses = w => (w ? w.classes.slice() : []).sort((a, b) => (a.day - b.day) || String(a.start).localeCompare(String(b.start)) || a.name.localeCompare(b.name));
+const dayName = s => DAYS[(D(s).getDay() + 6) % 7];
+function rangeLabel(a, b){
+  if (a === b) return fmtDate(a);
+  const x = D(a), y = D(b), sameY = x.getFullYear() === y.getFullYear(), sameM = sameY && x.getMonth() === y.getMonth();
+  return x.getDate() + (sameM ? '' : ' ' + x.toLocaleDateString('en-GB', {month:'short'}) + (sameY ? '' : ' ' + x.getFullYear())) + ' – ' + fmtDate(b);
+}
+function classesIn(a, b){
+  const out = [];
+  Object.keys(S.weeks).forEach(wid => { if (addDays(wid, 6) < a || wid > b) return;
+    (S.weeks[wid].classes || []).forEach(c => { const date = addDays(wid, c.day); if (date >= a && date <= b) out.push({date, c}); }); });
+  return out.sort((p, q) => p.date.localeCompare(q.date) || String(p.c.start).localeCompare(String(q.c.start)) || p.c.name.localeCompare(q.c.name));
+}
+function findClass(id){
+  for (const wid of Object.keys(S.weeks)) { const c = (S.weeks[wid].classes || []).find(x => x.id === id); if (c) return {w:S.weeks[wid], c}; }
+  return null;
+}
+function weekFor(date){ const id = mondayOf(date); return S.weeks[id] || (S.weeks[id] = {id, classes:[]}); }
+function saveWeek(w){ if (w.classes.length) put('week:' + w.id, w); else { delete S.weeks[w.id]; put('week:' + w.id, null); } }
 const hours = c => c.start ? c.start + (c.end ? ' – ' + c.end : '') : '';
 function addClassItem(clsId, ex){
-  const w = weekOf(), cl = w && w.classes.find(x => x.id === clsId); if (!cl) return;
-  cl.items.push({id:uid(), ex, reps:'', time:'', load:'', rest:'', note:''}); saveWeek(w);
+  const hit = findClass(clsId); if (!hit) return;
+  hit.c.items.push({id:uid(), ex, reps:'', time:'', load:'', rest:'', note:''}); saveWeek(hit.w);
 }
 function packButton(){
   const have = Object.values(S.exercises).map(e => e.name.toLowerCase()), missing = CLASS_EX.filter(e => !have.includes(e[0].toLowerCase())).length;
   return missing ? '<div><button class="btn" style="white-space:normal;text-align:left" data-act="addpack">Add ' + missing + ' HYROX and CrossFit exercises to the library</button></div>' : '';
 }
 function vClasses(){
-  const w = weekOf(), list = sortedClasses(w), now = mondayOf(today());
+  const list = classesIn(ui.from, ui.to), now = mondayOf(today()), isThis = ui.from === now && ui.to === addDays(now, 6), isNext = ui.from === addDays(now, 7) && ui.to === addDays(now, 13);
   let h = '<div class="row"><h1 class="h grow">Classes</h1><button class="btn primary" data-act="classpdf"' + (list.length ? '' : ' disabled') + '>Download PDF</button></div>' +
-    '<p class="hint">The weekly program for the classes you teach. Its PDF is plain, with no Enakoma logo or colours, so it can go straight to the gym.</p>' +
-    '<div class="row weeknav"><button class="btn icon" data-act="weekprev" aria-label="Previous week">←</button><div class="wk"><b>' + weekLabel(ui.week) + '</b>' + (ui.week === now ? ' <span class="pill good">This week</span>' : '') + '</div>' +
-    '<button class="btn icon" data-act="weeknext" aria-label="Next week">→</button>' + (ui.week === now ? '' : '<button class="btn small" data-act="weeknow">Go to this week</button>') + '</div>';
+    '<p class="hint">The program for the classes you teach, for any dates you pick. Its PDF is plain, with no Enakoma logo or colours, so it can go straight to the gym.</p>' +
+    '<div class="row range"><button class="btn icon" data-act="rangeprev" aria-label="Earlier dates">←</button>' +
+    '<label class="field"><span>From</span><input type="date" id="rfrom" data-c="range" data-k="from" value="' + ui.from + '"></label>' +
+    '<label class="field"><span>To</span><input type="date" id="rto" data-c="range" data-k="to" value="' + ui.to + '"></label>' +
+    '<button class="btn icon" data-act="rangenext" aria-label="Later dates">→</button><span class="quick">' +
+    (isThis ? '<span class="pill good">This week</span>' : '<button class="btn small" data-act="weeknow">This week</button>') +
+    (isNext ? '<span class="pill good">Next week</span>' : '<button class="btn small" data-act="weekafter">Next week</button>') + '</span></div>';
   if (!list.length) {
-    const full = Object.keys(S.weeks).filter(k => k !== ui.week && S.weeks[k].classes && S.weeks[k].classes.length).sort();
-    const from = full.filter(k => k < ui.week).pop() || full.pop();
-    return h + '<div class="empty"><h2 class="h">No classes in this week yet</h2><p>Add each class with its day, hours and exercises' + (from ? ', or start from a week you already built' : '') + '.</p><div class="row"><button class="btn primary" data-act="addclass">Add a class</button>' +
-      (from ? '<button class="btn" data-act="copyweek" data-from="' + from + '">Copy the week of ' + weekLabel(from) + '</button>' : '') + '</div></div>' + packButton();
+    const full = Object.keys(S.weeks).filter(k => S.weeks[k].classes && S.weeks[k].classes.length).sort();
+    const src = full.filter(k => k < mondayOf(ui.from)).pop() || full.filter(k => k > ui.to).shift();
+    return h + '<div class="empty"><h2 class="h">No classes on these dates yet</h2><p>Add each class with its date, hours and exercises' + (src ? ', or start from a week you already built' : '') + '.</p><div class="row"><button class="btn primary" data-act="addclass">Add a class</button>' +
+      (src ? '<button class="btn" style="white-space:normal;text-align:left" data-act="copyweek" data-from="' + src + '">Copy the classes from ' + rangeLabel(src, addDays(src, 6)) + '</button>' : '') + '</div></div>' + packButton();
   }
-  h += '<div style="max-width:420px">' + field('Heading on the PDF, for example the gym\'s name', '<input type="text" id="ctitle" data-c="classtitle" value="' + esc(S.settings.classTitle || '') + '" placeholder="Weekly class program">') + '</div>';
-  let day = -1;
-  list.forEach(c => {
-    if (c.day !== day) { day = c.day; h += '<h2 class="dayhead">' + DAYS[day] + '<span>' + fmtShort(addDays(ui.week, day)) + '</span></h2>'; }
-    h += classCard(c);
+  h += '<div style="max-width:420px">' + field('Heading on the PDF, for example the gym\'s name', '<input type="text" id="ctitle" data-c="classtitle" value="' + esc(S.settings.classTitle || '') + '" placeholder="Class program">') + '</div>';
+  let last = '';
+  list.forEach(e => {
+    if (e.date !== last) { last = e.date; h += '<h2 class="dayhead">' + dayName(e.date) + '<span>' + fmtShort(e.date) + '</span></h2>'; }
+    h += classCard(e.c, e.date);
   });
   return h + '<div class="row"><button class="btn" data-act="addclass">Add a class</button></div>' + packButton();
 }
-function classCard(c){
+function classCard(c, date){
   const a = 'data-c="cfield" data-class="' + c.id + '"', L = {reps:'Reps', time:'Time', load:'Weight', rest:'Rest'};
   let h = '<section class="day cls"><div class="row clshead"><div class="grow"><input type="text" class="dayname" id="cn-' + c.id + '" ' + a + ' data-k="name" value="' + esc(c.name) + '" aria-label="Class name"></div>' +
-    '<select id="cd-' + c.id + '" ' + a + ' data-k="day" aria-label="Day of ' + esc(c.name) + '">' + DAYS.map((d, i) => '<option value="' + i + '"' + (i === c.day ? ' selected' : '') + '>' + d + '</option>').join('') + '</select>' +
+    '<input type="date" id="cd-' + c.id + '" ' + a + ' data-k="date" value="' + date + '" aria-label="Date of ' + esc(c.name) + '">' +
     '<span class="times"><input type="time" id="cs-' + c.id + '" ' + a + ' data-k="start" value="' + esc(c.start) + '" aria-label="Start time of ' + esc(c.name) + '"><span>to</span>' +
     '<input type="time" id="ce-' + c.id + '" ' + a + ' data-k="end" value="' + esc(c.end) + '" aria-label="End time of ' + esc(c.name) + '"></span>' +
     '<span class="clsbtns"><button class="btn small quiet" data-act="dupclass" data-class="' + c.id + '">Duplicate</button>' + cbtn('delc-' + c.id, 'delclass', 'Delete', 'data-class="' + c.id + '"') + '</span></div>' +
@@ -908,27 +932,27 @@ function classCard(c){
   if (!c.items.length) h += '<tr><td colspan="7" class="muted">No exercises in this class yet.</td></tr>';
   return h + '</tbody></table></div><div class="addrow"><select id="cadd-' + c.id + '" data-c="caddit" data-class="' + c.id + '" aria-label="Add an exercise to ' + esc(c.name) + '"><option value="">Add an exercise…</option>' + exOptions('', true) + '</select></div></section>';
 }
-/* The class PDF is deliberately plain: black and grey, no logo, no brand typeface. */
-async function buildClassPdf(w){
+/* The class PDF is deliberately plain: black and grey, no logo, no brand colour. */
+async function buildClassPdf(list, from, to){
   const doc = new window.jspdf.jsPDF({unit:'pt', format:'a4'});
   let body = 'helvetica';
   try { pdfFonts().forEach(f => { doc.addFileToVFS(f[0], f[1]); doc.addFont(f[0], f[2], f[3]); }); body = 'Body'; } catch (e) {}
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 42;
   const INK = [20,20,22], INK2 = [92,92,100], LINE = [200,200,206], SOFT = [244,244,246], HEAD = [48,48,52];
-  const heading = S.settings.classTitle || 'Weekly class program';
+  const heading = S.settings.classTitle || 'Class program', when = rangeLabel(from, to);
   let y = M + 16;
   doc.setFont(body, 'bold'); doc.setFontSize(20); doc.setTextColor.apply(doc, INK); doc.text(heading, M, y);
-  y += 20; doc.setFont(body, 'normal'); doc.setFontSize(10.5); doc.setTextColor.apply(doc, INK2); doc.text('Week of ' + weekLabel(w.id), M, y);
+  y += 20; doc.setFont(body, 'normal'); doc.setFontSize(10.5); doc.setTextColor.apply(doc, INK2); doc.text(when, M, y);
   y += 14; doc.setDrawColor.apply(doc, INK); doc.setLineWidth(1.2); doc.line(M, y, W - M, y); y += 30;
   const room = need => { if (y + need > H - 56) { doc.addPage(); y = M + 16; } };
-  let day = -1;
-  sortedClasses(w).forEach(c => {
-    if (c.day !== day) { day = c.day; room(150);
-      doc.setFont(body, 'bold'); doc.setFontSize(9.5); doc.setTextColor.apply(doc, INK2); doc.text((DAYS[day] + '  ·  ' + fmtShort(addDays(w.id, day))).toUpperCase(), M, y, {charSpace:1}); y += 22; }
+  let last = '';
+  list.forEach(e => { const c = e.c;
+    if (e.date !== last) { last = e.date; room(150);
+      doc.setFont(body, 'bold'); doc.setFontSize(9.5); doc.setTextColor.apply(doc, INK2); doc.text((dayName(e.date) + '  ·  ' + fmtShort(e.date)).toUpperCase(), M, y, {charSpace:1}); y += 22; }
     room(Math.min(70 + c.items.length * 24, 170));
     doc.setFont(body, 'bold'); doc.setFontSize(14); doc.setTextColor.apply(doc, INK); doc.text(c.name, M, y);
     if (hours(c)) doc.text(hours(c), W - M, y, {align:'right'});
-    if (c.note) { y += 15; doc.setFont(body, 'normal'); doc.setFontSize(10); doc.setTextColor.apply(doc, INK2); doc.text(doc.splitTextToSize(c.note, W - 2 * M), M, y); y += (doc.splitTextToSize(c.note, W - 2 * M).length - 1) * 12; }
+    if (c.note) { const lines = doc.splitTextToSize(c.note, W - 2 * M); y += 15; doc.setFont(body, 'normal'); doc.setFontSize(10); doc.setTextColor.apply(doc, INK2); doc.text(lines, M, y); y += (lines.length - 1) * 12; }
     const right = t => ({content:t, styles:{halign:'right'}});
     doc.autoTable({startY:y + 9, margin:{left:M, right:M, bottom:56, top:M + 6}, theme:'plain', rowPageBreak:'avoid',
       head:[[right('#'), 'Exercise', 'Reps', 'Time', 'Weight', 'Rest', 'Notes']],
@@ -942,14 +966,14 @@ async function buildClassPdf(w){
   const pages = doc.getNumberOfPages();
   for (let p = 1; p <= pages; p++) { doc.setPage(p); doc.setDrawColor.apply(doc, LINE); doc.setLineWidth(0.75); doc.line(M, H - 40, W - M, H - 40);
     doc.setFont(body, 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, INK2);
-    doc.text(heading + '  ·  Week of ' + weekLabel(w.id), M, H - 26); doc.text('Page ' + p + ' of ' + pages, W - M, H - 26, {align:'right'}); }
+    doc.text(heading + '  ·  ' + when, M, H - 26); doc.text('Page ' + p + ' of ' + pages, W - M, H - 26, {align:'right'}); }
   return doc.output('arraybuffer');
 }
 async function exportClassPdf(btn){
-  const w = weekOf(); if (!w || !w.classes.length) return;
+  const list = classesIn(ui.from, ui.to); if (!list.length) return;
   if (!window.jspdf) return toast('The PDF tool did not load. Reload the page and try again.');
   const old = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing…';
-  try { const buf = await buildClassPdf(w); saveFile('Classes - week of ' + w.id + '.pdf', new Blob([buf], {type:'application/pdf'})); }
+  try { const buf = await buildClassPdf(list, ui.from, ui.to); saveFile('Classes - ' + ui.from + (ui.to === ui.from ? '' : ' to ' + ui.to) + '.pdf', new Blob([buf], {type:'application/pdf'})); }
   catch (e) { toast('The PDF could not be created.'); }
   btn.disabled = false; btn.textContent = old;
 }
@@ -1150,11 +1174,20 @@ document.addEventListener('change', ev => {
   else if (k === 'exname') { const e = S.exercises[el.dataset.ex]; if (e && el.value.trim()) { e.name = el.value.trim(); saveExercises(); } }
   else if (k === 'exgroup') { const e = S.exercises[el.dataset.ex]; if (e) { e.group = el.value; saveExercises(); render(); } }
   else if (k === 'gtype' || k === 'gex') goalFields();
-  else if (k === 'cfield') { const w = weekOf(), cl = w && w.classes.find(x => x.id === el.dataset.class); if (!cl) return; const f = el.dataset.k;
-    if (f === 'day') cl.day = +el.value; else if (f === 'name') { if (!el.value.trim()) return; cl.name = el.value.trim(); } else cl[f] = el.value.trim();
-    saveWeek(w); if (f === 'day' || f === 'start') render(); }
-  else if (k === 'citem') { const w = weekOf(), cl = w && w.classes.find(x => x.id === el.dataset.class), it = cl && cl.items.find(i => i.id === el.dataset.item); if (!it) return; it[el.dataset.k] = el.value.trim(); saveWeek(w); }
+  else if (k === 'cfield') { const hit = findClass(el.dataset.class); if (!hit) return; const cl = hit.c, f = el.dataset.k;
+    if (f === 'date') { if (!el.value) return; const nd = (D(el.value).getDay() + 6) % 7;
+      if (mondayOf(el.value) === hit.w.id) { cl.day = nd; saveWeek(hit.w); }
+      else { hit.w.classes = hit.w.classes.filter(x => x.id !== cl.id); saveWeek(hit.w); cl.day = nd; const w2 = weekFor(el.value); w2.classes.push(cl); saveWeek(w2); }
+      if (el.value < ui.from || el.value > ui.to) { const nf = el.value < ui.from ? el.value : ui.from, nt = el.value > ui.to ? el.value : ui.to;
+        if (days(nf, nt) <= 92) { ui.from = nf; ui.to = nt; toast('The dates shown now include ' + fmtDate(el.value) + '.'); } else toast('Moved to ' + fmtDate(el.value) + ', which is outside the dates shown.'); }
+      render(); return; }
+    if (f === 'name') { if (!el.value.trim()) return; cl.name = el.value.trim(); } else cl[f] = el.value.trim();
+    saveWeek(hit.w); if (f === 'start') render(); }
+  else if (k === 'citem') { const hit = findClass(el.dataset.class), it = hit && hit.c.items.find(i => i.id === el.dataset.item); if (!it) return; it[el.dataset.k] = el.value.trim(); saveWeek(hit.w); }
   else if (k === 'caddit') { if (!el.value) return; if (el.value === '__new') { el.value = ''; return openModal({type:'exercise', then:{cls:el.dataset.class}}); } addClassItem(el.dataset.class, el.value); render(); }
+  else if (k === 'range') { if (!el.value) return;
+    if (el.dataset.k === 'from') { ui.from = el.value; if (ui.to < ui.from) ui.to = ui.from; } else { ui.to = el.value; if (ui.to < ui.from) ui.from = ui.to; }
+    if (days(ui.from, ui.to) > 92) { ui.to = addDays(ui.from, 92); toast('The range is limited to about three months.'); } render(); }
   else if (k === 'classtitle') { S.settings.classTitle = el.value.trim(); saveSettings(); }
   else if (k === 'restore') { const f = el.files && el.files[0]; if (!f) return; const r = new FileReader();
     r.onload = () => { try { const d = JSON.parse(r.result); if (!d || d.app !== 'trainer-desk' || !d.clients || typeof d.clients !== 'object') throw 0; ui.restore = d;
@@ -1187,20 +1220,23 @@ function act(name, d, el){
     case 'back': ui.cid = null; break;
     case 'sub': ui.sub = d.sub; break;
     case 'allsessions': ui.allSessions = !ui.allSessions; break;
-    case 'weekprev': ui.week = addDays(ui.week, -7); break;
-    case 'weeknext': ui.week = addDays(ui.week, 7); break;
-    case 'weeknow': ui.week = mondayOf(today()); break;
-    case 'addclass': { const w = weekOf() || (S.weeks[ui.week] = {id:ui.week, classes:[]}), t = today(), last = sortedClasses(w).pop();
-      w.classes.push({id:uid(), name:'New class', day:last ? last.day : (mondayOf(t) === ui.week ? (D(t).getDay() + 6) % 7 : 0), start:'18:00', end:'19:00', note:'', items:[]}); saveWeek(w); break; }
-    case 'dupclass': { const w = weekOf(), from = w && w.classes.find(x => x.id === d.class); if (!from) return; const n = clone(from); n.id = uid(); n.items.forEach(i => { i.id = uid(); });
-      w.classes.push(n); saveWeek(w); toast('Class duplicated. Set its day and time.'); break; }
-    case 'delclass': { const w = weekOf(); if (!w) return; w.classes = w.classes.filter(x => x.id !== d.class);
-      if (w.classes.length) saveWeek(w); else { delete S.weeks[w.id]; put('week:' + w.id, null); } break; }
-    case 'copyweek': { const from = S.weeks[d.from]; if (!from) return; const w = S.weeks[ui.week] = {id:ui.week, classes:clone(from.classes)};
-      w.classes.forEach(cl => { cl.id = uid(); cl.items.forEach(i => { i.id = uid(); }); }); saveWeek(w); toast('Week copied'); break; }
-    case 'delcitem': { const w = weekOf(), cl = w && w.classes.find(x => x.id === d.class); if (!cl) return; cl.items = cl.items.filter(i => i.id !== d.item); saveWeek(w); break; }
-    case 'movecitem': { const w = weekOf(), cl = w && w.classes.find(x => x.id === d.class); if (!cl) return; const i = cl.items.findIndex(x => x.id === d.item), j = i + (+d.dir); if (j < 0 || j >= cl.items.length) return;
-      const t = cl.items[i]; cl.items[i] = cl.items[j]; cl.items[j] = t; saveWeek(w); break; }
+    case 'rangeprev': { const n = days(ui.from, ui.to) + 1; ui.from = addDays(ui.from, -n); ui.to = addDays(ui.to, -n); break; }
+    case 'rangenext': { const n = days(ui.from, ui.to) + 1; ui.from = addDays(ui.from, n); ui.to = addDays(ui.to, n); break; }
+    case 'weeknow': ui.from = mondayOf(today()); ui.to = addDays(ui.from, 6); break;
+    case 'weekafter': ui.from = addDays(mondayOf(today()), 7); ui.to = addDays(ui.from, 6); break;
+    case 'addclass': { const t = today(), list = classesIn(ui.from, ui.to), date = list.length ? list[list.length - 1].date : (t >= ui.from && t <= ui.to ? t : ui.from), w = weekFor(date);
+      w.classes.push({id:uid(), name:'New class', day:(D(date).getDay() + 6) % 7, start:'18:00', end:'19:00', note:'', items:[]}); saveWeek(w); break; }
+    case 'dupclass': { const hit = findClass(d.class); if (!hit) return; const n = clone(hit.c); n.id = uid(); n.items.forEach(i => { i.id = uid(); });
+      hit.w.classes.push(n); saveWeek(hit.w); toast('Class duplicated. Set its date and time.'); break; }
+    case 'delclass': { const hit = findClass(d.class); if (!hit) return; hit.w.classes = hit.w.classes.filter(x => x.id !== d.class); saveWeek(hit.w); break; }
+    case 'copyweek': { const src = S.weeks[d.from]; if (!src) return; let n = 0;
+      for (let m = mondayOf(ui.from); m <= ui.to; m = addDays(m, 7)) { if (m === src.id) continue;
+        const add = clone(src.classes).filter(cl => { const dt = addDays(m, cl.day); return dt >= ui.from && dt <= ui.to; }); if (!add.length) continue;
+        add.forEach(cl => { cl.id = uid(); cl.items.forEach(i => { i.id = uid(); }); }); const w = weekFor(m); w.classes = w.classes.concat(add); saveWeek(w); n += add.length; }
+      toast(n ? (n === 1 ? 'One class copied' : n + ' classes copied') : 'None of those classes fall on the dates shown.'); break; }
+    case 'delcitem': { const hit = findClass(d.class); if (!hit) return; hit.c.items = hit.c.items.filter(i => i.id !== d.item); saveWeek(hit.w); break; }
+    case 'movecitem': { const hit = findClass(d.class); if (!hit) return; const its = hit.c.items, i = its.findIndex(x => x.id === d.item), j = i + (+d.dir); if (j < 0 || j >= its.length) return;
+      const t = its[i]; its[i] = its[j]; its[j] = t; saveWeek(hit.w); break; }
     case 'classpdf': return exportClassPdf(el);
     case 'addpack': { let n = 0; const have = Object.values(S.exercises).map(e => e.name.toLowerCase());
       CLASS_EX.forEach(e => { if (!have.includes(e[0].toLowerCase())) { S.exercises[uid()] = {name:e[0], group:e[1]}; n++; } }); if (n) saveExercises(); toast(n + ' exercises added to the library'); break; }
@@ -1273,7 +1309,7 @@ function pdfFonts(){ if (!window.PDF_FONTS) throw new Error('fonts'); return win
 async function buildPdf(c){
   const doc = new window.jspdf.jsPDF({unit:'pt', format:'a4'});
   let body = 'helvetica', disp = 'helvetica';
-  try { pdfFonts().forEach(f => { doc.addFileToVFS(f[0], f[1]); doc.addFont(f[0], f[2], f[3]); }); body = 'Body'; disp = 'Display'; } catch (e) {}
+  try { pdfFonts().forEach(f => { doc.addFileToVFS(f[0], f[1]); doc.addFont(f[0], f[2], f[3]); }); body = 'Body'; disp = 'Body'; } catch (e) {}
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 42, s = S.settings;
   const INK = [10,10,11], INK2 = [84,84,94], LINE = [214,216,222], ACC = [61,123,255], ACCT = [36,88,214], SOFT = [243,244,247];
   doc.setFillColor.apply(doc, INK); doc.rect(0, 0, W, 76, 'F'); doc.setFillColor.apply(doc, ACC); doc.rect(0, 76, W, 4, 'F');
@@ -1283,7 +1319,7 @@ async function buildPdf(c){
   const side = [s.trainer, s.contact].filter(Boolean); side.forEach((t, i) => doc.text(t, W - M, (side.length > 1 ? 36 : 44) + i * 14, {align:'right'}));
   let y = 116;
   doc.setFont(body, 'bold'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, ACCT); doc.text('TRAINING PROGRAM', M, y, {charSpace:1.2});
-  y += 32; doc.setFont(disp, 'bold'); doc.setFontSize(28); doc.setTextColor.apply(doc, INK); doc.text(c.name, M, y);
+  y += 32; doc.setFont(disp, 'bold'); doc.setFontSize(30); doc.setTextColor.apply(doc, INK); doc.text(c.name, M, y);
   y += 20; doc.setFont(body, 'normal'); doc.setFontSize(10); doc.setTextColor.apply(doc, INK2);
   doc.text('Issued ' + fmtDate(today()) + '   ·   ' + c.days.length + (c.days.length === 1 ? ' training day' : ' training days') + '   ·   Loads in kg', M, y);
   y += 34;
@@ -1293,7 +1329,7 @@ async function buildPdf(c){
     headStyles:{fillColor:INK, textColor:[255,255,255], font:body, fontStyle:'bold', fontSize:8.5}, alternateRowStyles:{fillColor:SOFT}, columnStyles:cols,
     didParseCell:d => { if (d.section === 'head') d.cell.styles.textColor = [255,255,255]; }}); y = doc.lastAutoTable.finalY + 30; };
   const title = (t, rows) => { if (y + Math.min(40 + rows * 26, 170) > H - 60) { doc.addPage(); y = M + 18; }
-    doc.setFont(disp, 'bold'); doc.setFontSize(14); doc.setTextColor.apply(doc, INK); doc.text(t, M, y); };
+    doc.setFont(disp, 'bold'); doc.setFontSize(15); doc.setTextColor.apply(doc, INK); doc.text(t, M, y); };
   c.days.forEach(d => {
     title(d.name, d.items.length);
     table([right('#'), 'Exercise', right('Sets'), 'Reps', right('Load'), 'Rest', 'Notes'],
