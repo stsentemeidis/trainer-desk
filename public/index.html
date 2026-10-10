@@ -42,7 +42,7 @@ h1,h2,h3,p{margin:0}
 .top-in{max-width:1120px;margin:0 auto;padding-inline:20px;display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,auto) minmax(max-content,1fr);align-items:center;gap:8px 24px}
 .topright{justify-self:end;display:flex;align-items:center;gap:14px}
 .brand{display:flex;align-items:center;padding-block:15px;min-width:0;color:var(--bar-ink)}
-.brand svg{display:block;height:26px;width:auto;max-width:100%}
+.brand svg{display:block;height:30px;width:auto;max-width:100%}
 .tabs{display:flex;gap:8px;min-width:0;justify-content:center}
 .tab{background:none;border:0;color:var(--bar-ink-2);padding:18px 14px 15px;border-bottom:3px solid transparent;cursor:pointer;font-weight:500}
 .tab:hover{color:var(--bar-ink)}
@@ -124,13 +124,16 @@ table.t{border-collapse:collapse;width:100%}
 .t.wide{min-width:640px}
 
 /* form controls */
-input[type=text],input[type=number],input[type=date],input[type=email],input[type=time],select,textarea{background:var(--field);border:1px solid var(--field-line);border-radius:var(--r);padding:7px 9px;width:100%;min-width:0}
+input[type=text],input[type=number],input[type=date],input[type=email],input[type=time],input[type=search],select,textarea{background:var(--field);border:1px solid var(--field-line);border-radius:var(--r);padding:7px 9px;width:100%;min-width:0}
 input:hover,select:hover,textarea:hover{border-color:var(--ink-3)}
 .t.prog input,.t.prog select{border-color:transparent;background:transparent}
 .t.prog input:hover,.t.prog select:hover,.t.prog input:focus,.t.prog select:focus{border-color:var(--field-line);background:var(--field)}
 input.w-s{width:64px}input.w-m{width:96px}input.w-l{width:130px}
 .c-ex{min-width:210px}.c-note{min-width:180px}.c-act{white-space:nowrap}
 .tabs{overflow-x:auto}
+.exfilter{align-items:flex-end}
+.exfilter .field:not(.grow){width:230px}
+.exfilter .grow{max-width:420px}
 .range{align-items:flex-end}
 .range .icon{width:38px;height:38px}
 .range .field{width:170px}
@@ -203,7 +206,7 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
 @media (max-width:760px){
   .top-in{padding-inline:16px;display:flex;flex-wrap:wrap}.wrap{padding-inline:16px}.banner-in{padding-inline:16px}
   .brand{padding-block:14px 2px;flex-basis:100%}
-  .brand svg{height:22px}
+  .brand svg{height:26px}
   .tab{padding:10px 10px 9px}
   .h1{font-size:30px}
   .row > .title{flex-basis:100%}
@@ -220,7 +223,7 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
   .goal .side{justify-content:flex-start}
   /* phone: larger type and touch targets */
   body{font-size:16px}
-  input[type=text],input[type=number],input[type=date],input[type=email],input[type=time],select,textarea{font-size:16px;min-height:44px}
+  input[type=text],input[type=number],input[type=date],input[type=email],input[type=time],input[type=search],select,textarea{font-size:16px;min-height:44px}
   .btn{min-height:44px}
   .btn.small{min-height:38px}
   .icon{width:44px;height:44px;font-size:18px}
@@ -232,6 +235,7 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
   .tab{flex:1;text-align:center;padding-inline:4px}
   .clshead .grow{flex-basis:100%}
   .clshead input[type=date]{flex:1 1 100%}
+  .exfilter .field{flex:1 1 100%!important;width:auto!important;max-width:none!important}
   .range .field{flex:1 1 40%;width:auto;min-width:0}
   .range .icon{order:2;width:44px;height:44px}
   .range .quick{order:3;flex:1;justify-content:flex-end}
@@ -345,14 +349,14 @@ function money(n){
   catch (e) { return n + ' ' + (S.settings.currency || ''); }
 }
 
-const LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="32 32 1089.9 136" role="img" aria-label="Enakoma"><path d="M48 100 H186" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"/><path d="M164 78 V122" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"/><path d="M152 100 A52 52 0 1 0 139.8 133.4" fill="none" stroke="currentColor" stroke-width="20"/><path d="M312.08 108.73H339.93Q338.86 115.58 333.14 120.65Q327.42 125.72 316.5 128.5Q305.59 131.27 288.71 131.27Q270.9 131.27 257.98 128.44Q245.05 125.61 238.09 118.88Q231.13 112.15 231.13 100.71Q231.13 89.38 237.91 82.59Q244.7 75.81 257.56 72.86Q270.42 69.91 288.71 69.91Q306.65 69.91 318.1 73.1Q329.54 76.28 334.97 83.42Q340.4 90.56 340.16 102.71H259.92Q260.51 105.78 263.28 108.38Q266.06 110.97 271.9 112.57Q277.74 114.16 287.53 114.16Q297.68 114.16 304.23 112.74Q310.78 111.33 312.08 108.73ZM287.53 87.02Q275.03 87.02 268.48 89.73Q261.93 92.45 260.75 95.16H312.67Q311.84 92.09 306.06 89.56Q300.28 87.02 287.53 87.02Z M346.06 71.68H374.38V129.5H346.06ZM416.86 69.91Q423.82 69.91 430.31 71.38Q436.8 72.86 441.94 76.4Q447.07 79.94 450.14 86.08Q453.21 92.21 453.21 101.53V129.5H424.89V105.07Q424.89 96.22 420.28 92.51Q415.68 88.79 403.65 88.79Q397.27 88.79 391.31 90.21Q385.36 91.62 380.64 93.57Q375.92 95.52 373.2 97.4L372.97 92.92Q373.44 90.8 376.21 86.96Q378.98 83.13 384.29 79.23Q389.6 75.34 397.69 72.62Q405.77 69.91 416.86 69.91Z M503.12 131.15Q490.38 131.15 480.46 127.55Q470.55 123.95 464.83 117.11Q459.11 110.27 459.11 100.59Q459.11 90.44 464.83 83.6Q470.55 76.75 480.46 73.33Q490.38 69.91 503.12 69.91Q517.28 69.91 527.61 73.75Q537.93 77.58 543.53 84.48Q549.14 91.39 549.14 100.59Q549.14 107.43 545.95 113.04Q542.77 118.64 536.75 122.72Q530.73 126.79 522.24 128.97Q513.74 131.15 503.12 131.15ZM513.74 113.22Q522.71 113.22 530.2 112.09Q537.69 110.97 542.24 108.26Q546.78 105.55 546.78 100.59Q546.78 95.52 542.24 92.8Q537.69 90.09 530.2 89.03Q522.71 87.96 513.74 87.96Q501.7 87.96 495.1 91.09Q488.49 94.22 488.49 100.59Q488.49 104.72 491.44 107.55Q494.39 110.38 500.05 111.8Q505.72 113.22 513.74 113.22ZM546.78 71.68H575.1V129.5H548.43Q548.43 129.5 548.02 126.79Q547.61 124.07 547.19 119Q546.78 113.92 546.78 107.08Z M583.36 48.08H611.68V129.5H583.36ZM683.42 71.68 636.7 104.13 637.29 88.79 687.44 129.5H651.56L612.15 96.58L645.9 71.68Z M744.67 131.27Q725.9 131.27 713.45 128.2Q701.01 125.13 694.81 118.41Q688.62 111.68 688.62 100.71Q688.62 89.73 694.81 82.95Q701.01 76.16 713.45 73.04Q725.9 69.91 744.67 69.91Q763.31 69.91 775.64 73.04Q787.97 76.16 794.11 82.95Q800.24 89.73 800.24 100.71Q800.24 111.68 794.11 118.41Q787.97 125.13 775.64 128.2Q763.31 131.27 744.67 131.27ZM744.67 114.16Q753.4 114.16 759.3 112.69Q765.2 111.21 768.27 108.2Q771.33 105.19 771.33 100.71Q771.33 96.22 768.33 93.16Q765.32 90.09 759.42 88.55Q753.52 87.02 744.67 87.02Q735.93 87.02 729.86 88.55Q723.78 90.09 720.65 93.1Q717.53 96.11 717.53 100.71Q717.53 105.19 720.59 108.2Q723.66 111.21 729.74 112.69Q735.82 114.16 744.67 114.16Z M806.14 71.68H834.46V129.5H806.14ZM876.94 69.91Q883.91 69.91 890.4 71.38Q896.89 72.86 902.02 76.4Q907.15 79.94 910.22 86.08Q913.29 92.21 913.29 101.53V129.5H884.97V105.07Q884.97 96.22 880.37 92.51Q875.76 88.79 863.73 88.79Q857.36 88.79 851.4 90.21Q845.44 91.62 840.72 93.57Q836 95.52 833.28 97.4L833.05 92.92Q833.52 90.8 836.29 86.96Q839.07 83.13 844.38 79.23Q849.69 75.34 857.77 72.62Q865.85 69.91 876.94 69.91ZM954.35 69.91Q961.31 69.91 967.8 71.38Q974.29 72.86 979.43 76.4Q984.56 79.94 987.63 86.08Q990.7 92.21 990.7 101.53V129.5H962.38V105.07Q962.38 96.22 957.77 92.51Q953.17 88.79 941.14 88.79Q934.76 88.79 928.8 90.21Q922.85 91.62 918.13 93.57Q913.41 95.52 910.69 97.4L910.46 91.74Q910.93 89.97 914 86.43Q917.06 82.89 922.67 79.11Q928.27 75.34 936.24 72.62Q944.2 69.91 954.35 69.91Z M1040.61 131.15Q1027.87 131.15 1017.95 127.55Q1008.04 123.95 1002.32 117.11Q996.6 110.27 996.6 100.59Q996.6 90.44 1002.32 83.6Q1008.04 76.75 1017.95 73.33Q1027.87 69.91 1040.61 69.91Q1054.77 69.91 1065.1 73.75Q1075.42 77.58 1081.03 84.48Q1086.63 91.39 1086.63 100.59Q1086.63 107.43 1083.44 113.04Q1080.26 118.64 1074.24 122.72Q1068.22 126.79 1059.73 128.97Q1051.23 131.15 1040.61 131.15ZM1051.23 113.22Q1060.2 113.22 1067.69 112.09Q1075.18 110.97 1079.73 108.26Q1084.27 105.55 1084.27 100.59Q1084.27 95.52 1079.73 92.8Q1075.18 90.09 1067.69 89.03Q1060.2 87.96 1051.23 87.96Q1039.19 87.96 1032.59 91.09Q1025.98 94.22 1025.98 100.59Q1025.98 104.72 1028.93 107.55Q1031.88 110.38 1037.54 111.8Q1043.21 113.22 1051.23 113.22ZM1084.27 71.68H1112.59V129.5H1085.92Q1085.92 129.5 1085.51 126.79Q1085.1 124.07 1084.68 119Q1084.27 113.92 1084.27 107.08Z" fill="currentColor"/></svg>';
+const LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="32 32 760.9 136" role="img" aria-label="Enakoma"><path d="M48 100 H186" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"/><path d="M164 78 V122" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"/><path d="M152 100 A52 52 0 1 0 139.8 133.4" fill="none" stroke="currentColor" stroke-width="20"/><path d="M264.37 137.62Q253.42 137.62 245.07 132.9Q236.72 128.18 232 119.9Q227.28 111.62 227.28 100.92Q227.28 89.24 231.9 80.6Q236.52 71.95 244.64 67.16Q252.76 62.38 263.32 62.38Q274.54 62.38 282.39 67.66Q290.24 72.94 294.01 82.51Q297.77 92.08 296.65 105.02H278.89V98.42Q278.89 87.53 275.43 82.74Q271.96 77.96 264.11 77.96Q254.93 77.96 250.61 83.53Q246.29 89.11 246.29 100Q246.29 109.97 250.61 115.41Q254.93 120.86 263.32 120.86Q268.6 120.86 272.36 118.55Q276.12 116.24 278.1 111.88L296.05 117.03Q292.03 126.8 283.35 132.21Q274.67 137.62 264.37 137.62ZM240.74 105.02V91.68H288V105.02Z M355.45 135.64V101.98Q355.45 99.54 355.19 95.74Q354.92 91.95 353.54 88.12Q352.15 84.29 349.02 81.72Q345.88 79.14 340.14 79.14Q337.83 79.14 335.19 79.87Q332.55 80.6 330.24 82.67Q327.93 84.75 326.45 88.78Q324.96 92.81 324.96 99.47L314.66 94.59Q314.66 86.14 318.1 78.75Q321.53 71.36 328.43 66.8Q335.32 62.25 345.82 62.25Q354.2 62.25 359.48 65.09Q364.76 67.92 367.7 72.28Q370.63 76.64 371.89 81.35Q373.14 86.07 373.4 89.97Q373.67 93.86 373.67 95.64V135.64ZM306.74 135.64V64.36H322.72V87.99H324.96V135.64Z M406.01 137.62Q398.35 137.62 393.04 134.68Q387.73 131.75 384.99 126.83Q382.25 121.91 382.25 115.97Q382.25 111.02 383.77 106.93Q385.28 102.84 388.68 99.7Q392.08 96.57 397.82 94.46Q401.78 93 407.26 91.88Q412.74 90.76 419.67 89.74Q426.6 88.71 434.92 87.46L428.45 91.02Q428.45 84.69 425.41 81.72Q422.38 78.75 415.25 78.75Q411.29 78.75 407 80.66Q402.71 82.58 400.99 87.46L384.76 82.31Q387.46 73.47 394.92 67.92Q402.38 62.38 415.25 62.38Q424.69 62.38 432.01 65.28Q439.34 68.19 443.1 75.32Q445.21 79.28 445.61 83.24Q446 87.2 446 92.08V135.64H430.3V120.99L432.54 124.02Q427.33 131.22 421.29 134.42Q415.25 137.62 406.01 137.62ZM409.84 123.5Q414.79 123.5 418.19 121.75Q421.58 120 423.6 117.75Q425.61 115.51 426.34 113.99Q427.72 111.09 427.95 107.23Q428.18 103.37 428.18 100.79L433.46 102.11Q425.48 103.43 420.53 104.32Q415.58 105.21 412.54 105.94Q409.51 106.67 407.2 107.52Q404.56 108.58 402.94 109.8Q401.32 111.02 400.56 112.47Q399.8 113.93 399.8 115.71Q399.8 118.15 401.03 119.9Q402.25 121.65 404.49 122.57Q406.73 123.5 409.84 123.5Z M458.41 135.64 458.54 40.6H476.76V98.68L500.92 64.36H523.09L497.35 100L524.81 135.64H501.44L476.76 101.32V135.64Z M558.86 137.62Q548.11 137.62 539.99 132.8Q531.87 127.98 527.35 119.5Q522.83 111.02 522.83 100Q522.83 88.85 527.45 80.36Q532.07 71.88 540.19 67.13Q548.3 62.38 558.86 62.38Q569.62 62.38 577.77 67.2Q585.92 72.02 590.48 80.5Q595.03 88.98 595.03 100Q595.03 111.09 590.44 119.57Q585.86 128.05 577.71 132.83Q569.56 137.62 558.86 137.62ZM558.86 120.86Q567.51 120.86 571.77 115.01Q576.02 109.17 576.02 100Q576.02 90.5 571.7 84.82Q567.38 79.14 558.86 79.14Q552.99 79.14 549.23 81.78Q545.47 84.42 543.65 89.11Q541.84 93.8 541.84 100Q541.84 109.57 546.16 115.21Q550.48 120.86 558.86 120.86Z M690.73 135.64V93.53Q690.73 86.47 687.4 82.54Q684.07 78.62 678.19 78.62Q674.43 78.62 671.66 80.36Q668.89 82.11 667.34 85.25Q665.78 88.38 665.78 92.48L658.26 87.46Q658.26 80.13 661.73 74.52Q665.19 68.91 671.03 65.78Q676.87 62.64 684 62.64Q696.21 62.64 702.45 69.87Q708.68 77.1 708.68 88.78V135.64ZM604.8 135.64V64.36H620.64V87.99H622.88V135.64ZM647.83 135.64V93.53Q647.83 86.47 644.5 82.54Q641.17 78.62 635.29 78.62Q629.68 78.62 626.28 82.48Q622.88 86.34 622.88 92.48L615.36 87.2Q615.36 80.2 618.86 74.66Q622.36 69.11 628.26 65.88Q634.17 62.64 641.5 62.64Q649.88 62.64 655.26 66.21Q660.64 69.77 663.21 75.71Q665.78 81.65 665.78 88.78V135.64Z M741.02 137.62Q733.37 137.62 728.06 134.68Q722.74 131.75 720 126.83Q717.26 121.91 717.26 115.97Q717.26 111.02 718.78 106.93Q720.3 102.84 723.7 99.7Q727.1 96.57 732.84 94.46Q736.8 93 742.28 91.88Q747.76 90.76 754.69 89.74Q761.62 88.71 769.93 87.46L763.46 91.02Q763.46 84.69 760.43 81.72Q757.39 78.75 750.26 78.75Q746.3 78.75 742.01 80.66Q737.72 82.58 736.01 87.46L719.77 82.31Q722.48 73.47 729.94 67.92Q737.39 62.38 750.26 62.38Q759.7 62.38 767.03 65.28Q774.35 68.19 778.12 75.32Q780.23 79.28 780.62 83.24Q781.02 87.2 781.02 92.08V135.64H765.31V120.99L767.56 124.02Q762.34 131.22 756.3 134.42Q750.26 137.62 741.02 137.62ZM744.85 123.5Q749.8 123.5 753.2 121.75Q756.6 120 758.61 117.75Q760.63 115.51 761.35 113.99Q762.74 111.09 762.97 107.23Q763.2 103.37 763.2 100.79L768.48 102.11Q760.49 103.43 755.54 104.32Q750.59 105.21 747.56 105.94Q744.52 106.67 742.21 107.52Q739.57 108.58 737.96 109.8Q736.34 111.02 735.58 112.47Q734.82 113.93 734.82 115.71Q734.82 118.15 736.04 119.9Q737.26 121.65 739.51 122.57Q741.75 123.5 744.85 123.5Z" fill="currentColor"/></svg>';
 
 /* ---------- state ---------- */
-const GROUPS = ['Legs','Chest','Back','Shoulders','Arms','Core','Conditioning','Other'];
+const GROUPS = ['Legs', 'Glutes', 'Chest', 'Back', 'Shoulders', 'Arms', 'Core', 'Full body', 'Olympic lifts', 'Gymnastics', 'Plyometrics', 'Conditioning', 'Cardio', 'HYROX', 'Mobility', 'Other'];
 const METHODS = ['Bank transfer','Cash','Card','Mobile payment','Other'];
 const DEFAULTS = {business:'', trainer:'', contact:'', currency:'EUR', defaultRate:60, classTitle:''};
 const S = {ready:false, blocked:null, storageOk:true, canSave:true, settings:Object.assign({}, DEFAULTS), exercises:{}, clients:{}, weeks:{}};
-const ui = {tab:'clients', cid:null, sub:'program', armed:null, draft:null, metric:null, allSessions:false, modal:null, migrate:null, restore:null};
+const ui = {tab:'clients', cid:null, sub:'program', armed:null, draft:null, metric:null, allSessions:false, modal:null, migrate:null, restore:null, exq:'', exg:''};
 const chartData = {};
 
 const norm = c => Object.assign({name:'', email:'', since:today(), rate:0, notes:'', days:[], goals:[], weights:[], sessions:[], ledger:[]}, c);
@@ -464,6 +468,7 @@ async function load(first){
   if (first) {
     S.ready = true;
     if (!docs.exercises) { S.exercises = clone(DEFAULT_EX); saveExercises(); }
+    growLibrary();
     let lost = 0, list = []; try { list = JSON.parse(ls.get(UKEY) || '[]'); } catch (e) {}
     list.forEach(it => { if ((net.revs[it.key] || 0) === (it.rev || 0)) { setDoc(it.key, it.data); net.pending[it.key] = it.data; } else lost++; });
     if (lost) toast('Some earlier unsaved changes were dropped because those records changed on another device.');
@@ -510,6 +515,7 @@ function boot(){
     const raw = ls.get(KEY); let ok = false; S.storageOk = ls.set('trainer-desk:test', '1');
     if (raw) { try { adopt(JSON.parse(raw)); ok = true; } catch (e) {} }
     if (!ok) S.exercises = clone(DEFAULT_EX);
+    growLibrary();
     S.ready = true; render();
     window.addEventListener('storage', e => { if (e.key !== KEY || !e.newValue) return; try { adopt(JSON.parse(e.newValue)); ui.draft = null; if (!ui.modal) render(); } catch (err) {} });
     return;
@@ -607,7 +613,7 @@ function render(){
   if (a && a.id && !$('modal').contains(a)) keep = {id:a.id, value:a.value, s:a.selectionStart, e:a.selectionEnd};
   Object.keys(chartData).forEach(k => delete chartData[k]);
   $('top').innerHTML = '<div class="brand">' + LOGO + '</div><nav class="tabs" aria-label="Sections">' +
-    [['clients','Clients'],['payments','Payments'],['exercises','Exercises'],['classes','Classes']].map(t => '<button class="tab" data-act="nav" data-tab="' + t[0] + '"' + (ui.tab === t[0] ? ' aria-current="page"' : '') + '>' + t[1] + '</button>').join('') +
+    [['clients','Clients'],['payments','Payments'],['classes','Classes'],['exercises','Exercises']].map(t => '<button class="tab" data-act="nav" data-tab="' + t[0] + '"' + (ui.tab === t[0] ? ' aria-current="page"' : '') + '>' + t[1] + '</button>').join('') +
     '</nav><div class="topright"><span class="sync" id="sync"></span><button class="btn small" data-act="settings">Settings</button></div>';
   $('banner').innerHTML = vBanner();
   let h;
@@ -843,8 +849,18 @@ function vExercises(){
   Object.values(S.weeks).forEach(w => (w.classes || []).forEach(c => c.items.forEach(it => { inClass[it.ex] = 1; })));
   Object.values(S.clients).forEach(c => { const seen = {}; c.days.forEach(d => d.items.forEach(it => { if (!seen[it.ex]) { seen[it.ex] = 1; used[it.ex] = (used[it.ex] || 0) + 1; } }));
     c.sessions.forEach(s => s.entries.forEach(e => { logged[e.ex] = (logged[e.ex] || 0) + 1; })); });
+  const plain = t => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), grp = id => S.exercises[id].group || 'Other';
+  const present = GROUPS.concat(ids.map(grp).filter((g, i, a) => !GROUPS.includes(g) && a.indexOf(g) === i)).filter(g => ids.some(id => grp(id) === g));
+  if (ui.exg && !present.includes(ui.exg)) ui.exg = '';
+  const q = plain(ui.exq).trim(), shown = ids.filter(id => (!ui.exg || grp(id) === ui.exg) && (!q || plain(exName(id)).includes(q)))
+    .sort((a, b) => (present.indexOf(grp(a)) - present.indexOf(grp(b))) || exName(a).localeCompare(exName(b)));
+  h += '<div class="row exfilter"><label class="field grow"><span>Search</span><input type="search" id="exq" data-c="exq" value="' + esc(ui.exq) + '" placeholder="Type a name, for example squat" autocomplete="off"></label>' +
+    '<label class="field"><span>Group</span><select id="exg" data-c="exg"><option value="">All groups (' + ids.length + ')</option>' + present.map(g => '<option value="' + esc(g) + '"' + (g === ui.exg ? ' selected' : '') + '>' + esc(g) + ' (' + ids.filter(id => grp(id) === g).length + ')</option>').join('') + '</select></label>' +
+    (q || ui.exg ? '<button class="btn small" data-act="exclear">Clear</button>' : '') + '</div>' +
+    '<p class="hint">' + (shown.length === ids.length ? ids.length + ' exercises' : 'Showing ' + shown.length + ' of ' + ids.length + ' exercises') + '</p>';
   h += '<div class="scroll cardwrap"><table class="t wide cards exlib"><thead><tr><th>Exercise</th><th>Group</th><th class="n">In programs</th><th class="n">Times logged</th><th></th></tr></thead><tbody>';
-  ids.sort((a, b) => (GROUPS.indexOf(S.exercises[a].group) - GROUPS.indexOf(S.exercises[b].group)) || exName(a).localeCompare(exName(b))).forEach(id => {
+  if (!shown.length) h += '<tr><td colspan="5" class="muted">No exercise matches. Clear the search, or add it with the button at the top.</td></tr>';
+  shown.forEach(id => {
     const e = S.exercises[id], busy = used[id] || logged[id] || inClass[id];
     h += '<tr><td><input type="text" id="ex-' + id + '-n" data-c="exname" data-ex="' + esc(id) + '" value="' + esc(e.name) + '" aria-label="Exercise name"></td>' +
       '<td><select id="ex-' + id + '-g" data-c="exgroup" data-ex="' + esc(id) + '" aria-label="Group for ' + esc(e.name) + '">' + GROUPS.map(g => '<option' + (g === e.group ? ' selected' : '') + '>' + g + '</option>').join('') + '</select></td>' +
@@ -857,7 +873,22 @@ function vExercises(){
 /* --- classes (independent of clients) ---
    Stored one document per week (Monday date); each class keeps its weekday. The screen and the PDF show any range of dates. */
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const CLASS_EX = [['Run','Conditioning'],['Row','Conditioning'],['SkiErg','Conditioning'],['Assault bike','Conditioning'],['Sled push','Conditioning'],['Sled pull','Conditioning'],['Burpee broad jump','Conditioning'],['Farmers carry','Conditioning'],['Sandbag lunge','Legs'],['Wall ball','Conditioning'],['Burpee','Conditioning'],['Box jump','Legs'],['Kettlebell swing','Conditioning'],['Thruster','Shoulders'],['Pull-up','Back'],['Toes to bar','Core'],['Double-under','Conditioning'],['Clean and jerk','Shoulders'],['Snatch','Shoulders'],['Air squat','Legs']];
+/* The standard library. Added once to an existing list (names already there are kept), and to every new one. */
+const LIB = {"Legs": ["Back squat", "Front squat", "Goblet squat", "Air squat", "Box squat", "Pause squat", "Smith machine squat", "Hack squat", "Leg press", "Single-leg leg press", "Bulgarian split squat", "Split squat", "Reverse lunge", "Forward lunge", "Walking lunge", "Lateral lunge", "Cossack squat", "Step-up", "Leg extension", "Lying leg curl", "Seated leg curl", "Nordic hamstring curl", "Romanian deadlift", "Stiff-leg deadlift", "Single-leg Romanian deadlift", "Good morning", "Sumo deadlift", "Trap bar deadlift", "Adductor machine", "Standing calf raise", "Seated calf raise", "Wall sit", "Sissy squat"], "Glutes": ["Hip thrust", "Single-leg hip thrust", "Glute bridge", "Single-leg glute bridge", "Cable kickback", "Cable pull-through", "Abductor machine", "Banded lateral walk", "Banded clamshell", "Frog pump", "Donkey kick", "Reverse hyperextension", "Curtsy lunge"], "Chest": ["Bench press", "Incline bench press", "Decline bench press", "Dumbbell bench press", "Incline dumbbell press", "Smith machine bench press", "Chest press machine", "Incline chest press machine", "Floor press", "Dumbbell fly", "Cable fly", "Low-to-high cable fly", "Pec deck", "Push-up", "Incline push-up", "Decline push-up", "Dip"], "Back": ["Deadlift", "Rack pull", "Pull-up", "Chin-up", "Assisted pull-up", "Lat pulldown", "Close-grip lat pulldown", "Single-arm lat pulldown", "Straight-arm pulldown", "Barbell row", "Pendlay row", "T-bar row", "One-arm dumbbell row", "Chest-supported row", "Seated cable row", "Machine row", "Inverted row", "Seal row", "Face pull", "Back extension", "Dumbbell pullover", "Shrug"], "Shoulders": ["Overhead press", "Dumbbell shoulder press", "Arnold press", "Machine shoulder press", "Landmine press", "Lateral raise", "Cable lateral raise", "Front raise", "Reverse fly", "Reverse pec deck", "Upright row", "Y raise", "Cable external rotation", "Band pull-apart"], "Arms": ["Biceps curl", "Barbell curl", "EZ-bar curl", "Hammer curl", "Preacher curl", "Incline dumbbell curl", "Cable curl", "Concentration curl", "Reverse curl", "Triceps pushdown", "Rope pushdown", "Overhead triceps extension", "Skull crusher", "Close-grip bench press", "Bench dip", "Triceps kickback", "Wrist curl"], "Core": ["Plank", "Side plank", "Copenhagen plank", "Dead bug", "Bird dog", "Pallof press", "Hollow hold", "Superman", "Crunch", "Bicycle crunch", "Sit-up", "GHD sit-up", "V-up", "Russian twist", "Leg raise", "Hanging knee raise", "Hanging leg raise", "Toes to bar", "Ab wheel rollout", "Cable crunch", "Cable woodchopper", "Flutter kicks", "Mountain climber"], "Full body": ["Thruster", "Dumbbell thruster", "Clean and press", "Turkish get-up", "Man maker", "Devil press", "Dumbbell snatch", "Kettlebell clean", "Kettlebell snatch", "Sandbag clean", "Tyre flip"], "Olympic lifts": ["Clean", "Power clean", "Hang clean", "Hang power clean", "Clean and jerk", "Push press", "Push jerk", "Split jerk", "Snatch", "Power snatch", "Hang snatch", "Overhead squat", "Snatch balance", "Clean pull", "Snatch pull"], "Gymnastics": ["Kipping pull-up", "Chest-to-bar pull-up", "Bar muscle-up", "Ring muscle-up", "Ring dip", "Ring row", "Handstand hold", "Handstand push-up", "Handstand walk", "Wall walk", "Rope climb", "L-sit", "Pistol squat", "Kip swing"], "Plyometrics": ["Box jump", "Box jump over", "Broad jump", "Jump squat", "Tuck jump", "Depth jump", "Jumping lunge", "Skater jump", "Lateral bound", "Pogo jump", "Medicine ball chest pass"], "Conditioning": ["Burpee", "Burpee box jump over", "Kettlebell swing", "Battle ropes", "Medicine ball slam", "Double-under", "Jump rope", "Bear crawl", "Suitcase carry", "Overhead carry", "Sandbag carry", "Sled drag", "Shuttle run", "Jumping jack", "High knees"], "Cardio": ["Run", "Sprint", "Interval run", "Treadmill run", "Incline walk", "Walk", "Row", "Assault bike", "BikeErg", "Stationary bike", "Bike intervals", "Elliptical", "Stair climber", "Swim"], "HYROX": ["SkiErg", "Sled push", "Sled pull", "Burpee broad jump", "Farmers carry", "Sandbag lunge", "Wall ball"], "Mobility": ["World's greatest stretch", "Cat-cow", "Child's pose", "Downward dog", "Thread the needle", "Thoracic rotation", "Band pass-through", "Wall slide", "Scapular push-up", "Hip flexor stretch", "Couch stretch", "90/90 hip stretch", "Pigeon stretch", "Glute stretch", "Hamstring stretch", "Deep squat hold", "Ankle mobility drill", "Leg swings", "Arm circles", "Foam rolling"]};
+const LIBRARY = [].concat.apply([], Object.keys(LIB).map(g => LIB[g].map(n => [n, g])));
+const REGROUP = {"Hip thrust": "Legs", "Bike intervals": "Conditioning", "Run": "Conditioning", "Row": "Conditioning", "SkiErg": "Conditioning", "Assault bike": "Conditioning", "Sled push": "Conditioning", "Sled pull": "Conditioning", "Burpee broad jump": "Conditioning", "Farmers carry": "Conditioning", "Sandbag lunge": "Legs", "Wall ball": "Conditioning", "Box jump": "Legs", "Thruster": "Shoulders", "Clean and jerk": "Shoulders", "Snatch": "Shoulders"};
+const LIB_VERSION = 2;
+function growLibrary(force){
+  if (!force && (S.settings.libraryVersion || 0) >= LIB_VERSION) return 0;
+  const byName = {}; Object.keys(S.exercises).forEach(id => { byName[String(S.exercises[id].name).toLowerCase()] = S.exercises[id]; });
+  let n = 0;
+  LIBRARY.forEach(e => { const have = byName[e[0].toLowerCase()];
+    if (!have) { S.exercises[uid()] = {name:e[0], group:e[1]}; n++; }
+    else if (!force && REGROUP[e[0]] && have.group === REGROUP[e[0]]) { have.group = e[1]; n++; } });
+  if (n) saveExercises();
+  if ((S.settings.libraryVersion || 0) < LIB_VERSION) { S.settings.libraryVersion = LIB_VERSION; saveSettings(); }
+  return n;
+}
 const addDays = (s, n) => { const d = D(s); d.setDate(d.getDate() + n); return iso(d); };
 const mondayOf = s => addDays(s, -((D(s).getDay() + 6) % 7));
 const dayName = s => DAYS[(D(s).getDay() + 6) % 7];
@@ -884,8 +915,8 @@ function addClassItem(clsId, ex){
   hit.c.items.push({id:uid(), ex, reps:'', time:'', load:'', rest:'', note:''}); saveWeek(hit.w);
 }
 function packButton(){
-  const have = Object.values(S.exercises).map(e => e.name.toLowerCase()), missing = CLASS_EX.filter(e => !have.includes(e[0].toLowerCase())).length;
-  return missing ? '<div><button class="btn" style="white-space:normal;text-align:left" data-act="addpack">Add ' + missing + ' HYROX and CrossFit exercises to the library</button></div>' : '';
+  const have = Object.values(S.exercises).map(e => String(e.name).toLowerCase()), missing = LIBRARY.filter(e => !have.includes(e[0].toLowerCase())).length;
+  return missing ? '<div><button class="btn" style="white-space:normal;text-align:left" data-act="addpack">Add back ' + missing + ' standard ' + (missing === 1 ? 'exercise' : 'exercises') + ' missing from this list</button></div>' : '';
 }
 function vClasses(){
   const list = classesIn(ui.from, ui.to), now = mondayOf(today()), isThis = ui.from === now && ui.to === addDays(now, 6), isNext = ui.from === addDays(now, 7) && ui.to === addDays(now, 13);
@@ -901,7 +932,7 @@ function vClasses(){
     const full = Object.keys(S.weeks).filter(k => S.weeks[k].classes && S.weeks[k].classes.length).sort();
     const src = full.filter(k => k < mondayOf(ui.from)).pop() || full.filter(k => k > ui.to).shift();
     return h + '<div class="empty"><h2 class="h">No classes on these dates yet</h2><p>Add each class with its date, hours and exercises' + (src ? ', or start from a week you already built' : '') + '.</p><div class="row"><button class="btn primary" data-act="addclass">Add a class</button>' +
-      (src ? '<button class="btn" style="white-space:normal;text-align:left" data-act="copyweek" data-from="' + src + '">Copy the classes from ' + rangeLabel(src, addDays(src, 6)) + '</button>' : '') + '</div></div>' + packButton();
+      (src ? '<button class="btn" style="white-space:normal;text-align:left" data-act="copyweek" data-from="' + src + '">Copy the classes from ' + rangeLabel(src, addDays(src, 6)) + '</button>' : '') + '</div></div>';
   }
   h += '<div style="max-width:420px">' + field('Heading on the PDF, for example the gym\'s name', '<input type="text" id="ctitle" data-c="classtitle" value="' + esc(S.settings.classTitle || '') + '" placeholder="Class program">') + '</div>';
   let last = '';
@@ -909,7 +940,7 @@ function vClasses(){
     if (e.date !== last) { last = e.date; h += '<h2 class="dayhead">' + dayName(e.date) + '<span>' + fmtShort(e.date) + '</span></h2>'; }
     h += classCard(e.c, e.date);
   });
-  return h + '<div class="row"><button class="btn" data-act="addclass">Add a class</button></div>' + packButton();
+  return h + '<div class="row"><button class="btn" data-act="addclass">Add a class</button></div>';
 }
 function classCard(c, date){
   const a = 'data-c="cfield" data-class="' + c.id + '"', L = {reps:'Reps', time:'Time', load:'Weight', rest:'Rest'};
@@ -1083,7 +1114,7 @@ function renderModal(){
       '<div class="grid2">' + field('Start date', '<input type="date" id="m-gfrom" required value="' + today() + '">') + field('Reach it by', '<input type="date" id="m-gby" required>') + '</div>' + foot('Add goal') + '</form>';
   } else if (m.type === 'exercise') {
     title = 'Add an exercise';
-    body = '<form data-form="exercise">' + field('Name', '<input type="text" id="m-exname" required>') + field('Group', '<select id="m-exgroup">' + GROUPS.map(g => '<option>' + g + '</option>').join('') + '</select>') + foot('Add exercise') + '</form>';
+    body = '<form data-form="exercise">' + field('Name', '<input type="text" id="m-exname" required>') + field('Group', '<select id="m-exgroup">' + GROUPS.map(g => '<option' + (g === ui.exg ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>') + foot('Add exercise') + '</form>';
   } else if (m.type === 'settings') {
     const s = S.settings; title = 'Settings';
     body = '<form data-form="settings">' + field('Business name', '<input type="text" id="m-business" value="' + esc(s.business) + '" placeholder="Enakoma">') +
@@ -1172,6 +1203,7 @@ document.addEventListener('change', ev => {
   else if (k === 'metric') { ui.metric = el.value; render(); }
   else if (k === 'goalcur') { const g = c.goals.find(g => g.id === el.dataset.goal), n = num(el.value); if (g && n != null) { g.current = n; saveClient(c); render(); } }
   else if (k === 'exname') { const e = S.exercises[el.dataset.ex]; if (e && el.value.trim()) { e.name = el.value.trim(); saveExercises(); } }
+  else if (k === 'exg') { ui.exg = el.value; render(); }
   else if (k === 'exgroup') { const e = S.exercises[el.dataset.ex]; if (e) { e.group = el.value; saveExercises(); render(); } }
   else if (k === 'gtype' || k === 'gex') goalFields();
   else if (k === 'cfield') { const hit = findClass(el.dataset.class); if (!hit) return; const cl = hit.c, f = el.dataset.k;
@@ -1196,7 +1228,9 @@ document.addEventListener('change', ev => {
     r.readAsText(f); }
 });
 document.addEventListener('input', ev => {
-  const el = ev.target, k = el.dataset.c, d = ui.draft; if (!d) return;
+  const el = ev.target, k = el.dataset.c, d = ui.draft;
+  if (k === 'exq') { ui.exq = el.value; render(); return; }
+  if (!d) return;
   if (k === 'draft') { const e = d.entries[+el.dataset.i], f = el.dataset.k; if (e) e[f] = f === 'reps' ? el.value : num(el.value); }
   else if (k === 'draftmeta') d[el.dataset.k] = el.value;
 });
@@ -1220,6 +1254,7 @@ function act(name, d, el){
     case 'back': ui.cid = null; break;
     case 'sub': ui.sub = d.sub; break;
     case 'allsessions': ui.allSessions = !ui.allSessions; break;
+    case 'exclear': ui.exq = ''; ui.exg = ''; break;
     case 'rangeprev': { const n = days(ui.from, ui.to) + 1; ui.from = addDays(ui.from, -n); ui.to = addDays(ui.to, -n); break; }
     case 'rangenext': { const n = days(ui.from, ui.to) + 1; ui.from = addDays(ui.from, n); ui.to = addDays(ui.to, n); break; }
     case 'weeknow': ui.from = mondayOf(today()); ui.to = addDays(ui.from, 6); break;
@@ -1238,8 +1273,7 @@ function act(name, d, el){
     case 'movecitem': { const hit = findClass(d.class); if (!hit) return; const its = hit.c.items, i = its.findIndex(x => x.id === d.item), j = i + (+d.dir); if (j < 0 || j >= its.length) return;
       const t = its[i]; its[i] = its[j]; its[j] = t; saveWeek(hit.w); break; }
     case 'classpdf': return exportClassPdf(el);
-    case 'addpack': { let n = 0; const have = Object.values(S.exercises).map(e => e.name.toLowerCase());
-      CLASS_EX.forEach(e => { if (!have.includes(e[0].toLowerCase())) { S.exercises[uid()] = {name:e[0], group:e[1]}; n++; } }); if (n) saveExercises(); toast(n + ' exercises added to the library'); break; }
+    case 'addpack': { const n = growLibrary(true); toast(n + (n === 1 ? ' exercise' : ' exercises') + ' added to the library'); break; }
     case 'step': { const e = ui.draft && ui.draft.entries[+d.i]; if (!e) return; e.load = Math.max(0, r2((+e.load || 0) + (+d.d))); const inp = $('lg-' + d.i + '-load'); if (inp) inp.value = fnum(e.load); return; }
     case 'settings': return openModal({type:'settings'});
     case 'm-client': return openModal({type:'client', cid:d.id || null});
