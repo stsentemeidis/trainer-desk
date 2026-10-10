@@ -1,10 +1,28 @@
 {
-  // The Worker name. It must match the project name you choose in Cloudflare,
-  // and it becomes the first part of the site address: trainer-desk.<your-subdomain>.workers.dev
+  // The Worker name. It must match the project name in Cloudflare,
+  // and it is the first part of the site address: trainer-desk.<your-subdomain>.workers.dev
   "name": "trainer-desk",
+  "main": "src/index.js",
   "compatibility_date": "2026-10-01",
-  // Everything in ./public is served as the website.
+  // No extra public address per version.
+  "preview_urls": false,
+  // Everything in ./public is served as the website. Addresses under /api/ go to src/index.js.
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // The database that holds clients, programs, sessions and payments.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "trainer-desk",
+      "database_id": "2c41d641-ef0a-40a4-83b7-273ce50e144a"
+    }
+  ],
+  // Which Cloudflare Access sign-in this site accepts. These are identifiers, not passwords.
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "nameless-tree-bc8b.cloudflareaccess.com",
+    "ACCESS_AUD": "272a21fe08064bf4c12e0ec5016afa43b83f475dab4a68007f84e535321eed93"
   }
 }
