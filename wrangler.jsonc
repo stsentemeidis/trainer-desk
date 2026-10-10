@@ -1,0 +1,10 @@
+{
+  // The Worker name. It must match the project name you choose in Cloudflare,
+  // and it becomes the first part of the site address: trainer-desk.<your-subdomain>.workers.dev
+  "name": "trainer-desk",
+  "compatibility_date": "2026-10-01",
+  // Everything in ./public is served as the website.
+  "assets": {
+    "directory": "./public"
+  }
+}
