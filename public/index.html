@@ -1228,7 +1228,7 @@ function renderModal(){
       '<div class="row"><button class="btn" data-act="backup">Download a backup</button><button class="btn" data-act="pickrestore">Restore from a backup</button><input type="file" id="m-restore" accept=".json,application/json" data-c="restore" hidden></div>' +
       '<div class="row" id="restore-box" hidden><p class="err grow" id="restore-msg"></p><button class="btn small armed" data-act="restore-go">Replace everything</button></div></div>' +
       (!LOCAL && net.gmail && net.gmail.configured ? '<div class="row" style="border-top:1px solid var(--line);padding-top:14px"><p class="hint grow">' + (net.gmail.connected ? 'Programs are sent from ' + esc(net.gmail.email) + '.' : 'No Gmail connected for sending programs.') + '</p>' +
-        (net.gmail.connected ? '<button class="btn small" data-act="gdisconnect">Disconnect Gmail</button>' : '<button class="btn small" data-act="gconnect">Connect Gmail</button>') + '</div>' : '') +
+        (net.gmail.mode === 'app' ? '' : net.gmail.connected ? '<button class="btn small" data-act="gdisconnect">Disconnect Gmail</button>' : '<button class="btn small" data-act="gconnect">Connect Gmail</button>') + '</div>' : '') +
       (!LOCAL && net.user ? '<div class="row" style="border-top:1px solid var(--line);padding-top:14px"><p class="hint grow">Signed in as ' + esc(net.user) + '</p><a class="btn small" href="/cdn-cgi/access/logout" style="text-decoration:none;color:var(--ink)">Sign out</a></div>' : '');
   } else if (m.type === 'email') {
     wide = true; title = 'Email the program to ' + esc(c.name.split(' ')[0]);
@@ -1540,7 +1540,7 @@ async function gmailSend(c, btn){
   if (r.kind === 'ok') { closeModal(); toast('Sent to ' + to); return; }
   if (r.kind === 'conflict' || (r.data && r.data.error === 'gmail_reconnect')) { net.gmail = Object.assign({}, net.gmail, {connected:false}); keepFields(renderModal); return show('Gmail needs to be connected again. Press Connect Gmail, then send.'); }
   const e = r.error || (r.data && r.data.error);
-  show(e === 'bad_address' ? 'That email address does not look right.' : r.kind === 'too_large' ? 'The PDF is too large to send.' : r.kind === 'expired' ? 'Your sign-in to the site has ended. Reload the page and try again.' : r.kind === 'offline' ? 'No connection. Nothing was sent; try again.' : 'Gmail did not accept the message. Nothing was sent; try again in a moment.');
+  show(e === 'bad_address' ? 'That email address does not look right, or Gmail refused it.' : e === 'gmail_login' ? 'Gmail refused the app password. Check the GMAIL_APP_PASSWORD secret in Cloudflare.' : r.kind === 'too_large' ? 'The PDF is too large to send.' : r.kind === 'expired' ? 'Your sign-in to the site has ended. Reload the page and try again.' : r.kind === 'offline' ? 'No connection. Nothing was sent; try again.' : 'Gmail did not accept the message. Nothing was sent; try again in a moment.');
 }
 function b64(bytes){ let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
 

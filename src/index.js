@@ -1,3 +1,5 @@
+import { connect } from "cloudflare:sockets";
+
 /**
  * Trainer Desk storage API.
  *
@@ -152,6 +154,9 @@ const GMAIL_SCOPE = "openid email https://www.googleapis.com/auth/gmail.send";
 let gmailToken = { at: "", exp: 0, email: "" };
 
 const gmailReady = (env) => !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && !/PASTE/.test(env.GOOGLE_CLIENT_ID));
+// Simpler alternative with no Google Cloud project: a Gmail app password, sent over Gmail's SMTP server.
+const appPassword = (env) => String(env.GMAIL_APP_PASSWORD || "").replace(/\s+/g, "");
+const appReady = (env) => !!(appPassword(env) && env.GMAIL_ADDRESS && /@/.test(env.GMAIL_ADDRESS));
 const tokenUrl = (env) => env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token";
 const sendUrl = (env) => env.GMAIL_SEND_URL || "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
 
@@ -235,14 +240,58 @@ function mime({ from, to, subject, text, filename, pdf }) {
   return lines.join("\r\n");
 }
 
+/* Minimal SMTP client: implicit TLS to smtp.gmail.com:465, AUTH PLAIN with the app password. */
+async function smtpSend(env, { user, pass, rcpts, data }) {
+  const host = env.SMTP_HOST || "smtp.gmail.com", port = Number(env.SMTP_PORT || 465);
+  const sock = connect({ hostname: host, port }, { secureTransport: env.SMTP_TLS === "off" ? "off" : "on" });
+  const writer = sock.writable.getWriter(), reader = sock.readable.getReader(), dec = new TextDecoder(), enc = new TextEncoder();
+  let buf = "";
+  const fail = (code, msg) => { const e = new Error(msg); e.code = code; throw e; };
+  async function reply() {
+    for (;;) {
+      const lines = buf.split("\r\n");
+      for (let i = 0; i < lines.length - 1; i++) {
+        if (/^\d{3} /.test(lines[i]) || /^\d{3}$/.test(lines[i])) { const out = lines.slice(0, i + 1); buf = lines.slice(i + 1).join("\r\n"); return { code: Number(lines[i].slice(0, 3)), text: out.join("\n") }; }
+      }
+      const { value, done } = await reader.read();
+      if (done) fail("conn", "connection closed");
+      buf += dec.decode(value, { stream: true });
+    }
+  }
+  const send = (line) => writer.write(enc.encode(line + "\r\n"));
+  async function step(line, ok, code) {
+    if (line !== null) await send(line);
+    const r = await reply();
+    if (!ok.includes(r.code)) fail(code || "smtp", r.text.slice(0, 200));
+    return r;
+  }
+  const timer = setTimeout(() => { try { sock.close(); } catch (e) {} }, 25000);
+  try {
+    await step(null, [220]);
+    await step("EHLO enakoma", [250]);
+    await step("AUTH PLAIN " + b64(utf8("\0" + user + "\0" + pass)), [235], "auth");
+    await step("MAIL FROM:<" + user + ">", [250]);
+    for (const r of rcpts) await step("RCPT TO:<" + r + ">", [250, 251], "rcpt");
+    await step("DATA", [354]);
+    const body = data.replace(/\r?\n/g, "\r\n").replace(/^\./gm, "..");
+    await writer.write(enc.encode(body + (body.endsWith("\r\n") ? "" : "\r\n") + ".\r\n"));
+    await step(null, [250]);
+    await send("QUIT").catch(() => {});
+  } finally {
+    clearTimeout(timer);
+    try { await sock.close(); } catch (e) {}
+  }
+}
+
 async function gmail(request, env, url, who, action) {
   const m = request.method;
   if (action === "status" && m === "GET") {
+    if (appReady(env)) return json({ configured: true, connected: true, email: env.GMAIL_ADDRESS, mode: "app" });
     if (!gmailReady(env)) return json({ configured: false });
     const saved = await readGmail(env);
     return json({ configured: true, connected: !!(saved && saved.refresh), email: saved ? saved.email : "" });
   }
-  if (!gmailReady(env)) return json({ error: "gmail_not_configured" }, 503);
+  if (!gmailReady(env) && !(appReady(env) && action === "send")) return json({ error: "gmail_not_configured" }, 503);
 
   if (action === "connect" && m === "GET") {
     const state = crypto.randomUUID();
@@ -291,9 +340,20 @@ async function gmail(request, env, url, who, action) {
     const body = String(b.text || "").slice(0, 100000);
     const pdf = b.pdf ? String(b.pdf).replace(/[^A-Za-z0-9+/=]/g, "") : "";
     const filename = String(b.filename || "Program.pdf").replace(/[\r\n"\\/]/g, " ").slice(0, 150);
+    const name = String(b.fromName || "").replace(/[\r\n"<>]/g, "").slice(0, 80);
+    if (appReady(env)) {
+      const user = String(env.GMAIL_ADDRESS).trim();
+      const from = name ? '"' + encodeWord(name) + '" <' + user + ">" : user;
+      try {
+        await smtpSend(env, { user, pass: appPassword(env), rcpts: to, data: mime({ from, to, subject, text: body, filename, pdf }) });
+        return json({ ok: true, from: user, to });
+      } catch (e) {
+        console.error("smtp send failed", e && e.message);
+        return json({ error: e && e.code === "auth" ? "gmail_login" : e && e.code === "rcpt" ? "bad_address" : "gmail_failed" }, e && e.code === "rcpt" ? 400 : 502);
+      }
+    }
     const tok = await accessToken(env);
     if (!tok) return json({ error: "gmail_reconnect" }, 409);
-    const name = String(b.fromName || "").replace(/[\r\n"<>]/g, "").slice(0, 80);
     const from = name ? '"' + encodeWord(name) + '" <' + tok.email + ">" : tok.email;
     const raw = b64url(utf8(mime({ from, to, subject, text: body, filename, pdf })));
     const res = await fetch(sendUrl(env), { method: "POST", headers: { authorization: "Bearer " + tok.at, "content-type": "application/json" }, body: JSON.stringify({ raw }) });
