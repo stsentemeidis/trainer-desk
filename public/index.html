@@ -1238,7 +1238,7 @@ function renderModal(){
     const ok = c.days.length > 0, g = net.gmail;
     const gline = LOCAL ? 'Sending works on the live site, not from a file on this computer.'
       : !g ? 'Checking Gmail…'
-      : !g.configured ? 'Sending is not set up yet: ' + (g.missing && g.missing.length ? 'Cloudflare has no ' + g.missing.join(' or ') + ' for this site.' : 'the site could not confirm the Gmail settings.')
+      : !g.configured ? 'Sending is not set up yet: ' + (g.missing && g.missing.length ? 'Cloudflare has no ' + g.missing.join(' or ') + ' for this site.' : 'the site could not confirm the Gmail settings.') + (g.seen ? ' Settings the site can see: ' + esc(g.seen.join(', ') || 'none') + '.' : '')
       : g.connected ? 'Sends from ' + esc(g.email || 'your Gmail') + ', with the PDF attached. It also appears in that Gmail\'s Sent folder.'
       : 'Connect a Gmail account once, then programs go out from it with the PDF attached.';
     const ready = !LOCAL && g && g.configured, send = '<button class="btn primary" id="e-send" data-act="' + (ready && !g.connected ? 'gconnect' : 'gsend') + '"' + (ok && ready ? '' : ' disabled') + '>' + (ready && !g.connected ? 'Connect Gmail' : 'Send') + '</button>';

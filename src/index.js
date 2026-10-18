@@ -155,7 +155,9 @@ let gmailToken = { at: "", exp: 0, email: "" };
 
 const gmailReady = (env) => !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && !/PASTE/.test(env.GOOGLE_CLIENT_ID));
 // Simpler alternative with no Google Cloud project: a Gmail app password, sent over Gmail's SMTP server.
-const appPassword = (env) => String(env.GMAIL_APP_PASSWORD || "").replace(/\s+/g, "");
+// Tolerates a name typed in lower case or with stray spaces in the Cloudflare dashboard.
+const envKey = (env, name) => Object.keys(env).find((k) => k.trim().toUpperCase() === name);
+const appPassword = (env) => { const k = envKey(env, "GMAIL_APP_PASSWORD"); return String((k && env[k]) || "").replace(/\s+/g, ""); };
 const appReady = (env) => !!(appPassword(env) && env.GMAIL_ADDRESS && /@/.test(env.GMAIL_ADDRESS));
 const tokenUrl = (env) => env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token";
 const sendUrl = (env) => env.GMAIL_SEND_URL || "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
@@ -287,7 +289,9 @@ async function gmail(request, env, url, who, action) {
   const m = request.method;
   if (action === "status" && m === "GET") {
     if (appReady(env)) return json({ configured: true, connected: true, email: env.GMAIL_ADDRESS, mode: "app" });
-    if (!gmailReady(env)) return json({ configured: false, missing: [appPassword(env) ? "" : "GMAIL_APP_PASSWORD", env.GMAIL_ADDRESS ? "" : "GMAIL_ADDRESS"].filter(Boolean) });
+    if (!gmailReady(env)) return json({ configured: false, missing: [appPassword(env) ? "" : "GMAIL_APP_PASSWORD", env.GMAIL_ADDRESS ? "" : "GMAIL_ADDRESS"].filter(Boolean),
+      // Names only, never values: which settings this running version of the site can see.
+      seen: Object.keys(env).filter((k) => typeof env[k] === "string").sort() });
     const saved = await readGmail(env);
     return json({ configured: true, connected: !!(saved && saved.refresh), email: saved ? saved.email : "" });
   }
