@@ -152,6 +152,13 @@ input.w-s{width:64px}input.w-m{width:96px}input.w-l{width:130px}
 .pkitem.new{color:var(--link);font-weight:600}
 @media (prefers-reduced-motion:reduce){ .tgl svg{transition:none} }
 .mailbtns{align-items:center}
+.t tr.blockrow td{background:var(--accent-soft);border-top:1px solid var(--line);padding:8px 10px}
+.blk{display:flex;gap:8px 14px;align-items:center;flex-wrap:wrap}
+.blkf{display:flex;gap:8px;flex:1;min-width:0;flex-wrap:wrap}
+.blkf .blkname{flex:0 1 240px;font-weight:700;min-width:0}
+.blkf .blknote{flex:1 1 280px;min-width:0}
+.blkbtns{display:flex;gap:4px;align-items:center}
+.addrow.row{gap:10px}
 .exfilter{align-items:flex-end}
 .exfilter .field:not(.grow){width:230px}
 .exfilter .grow{max-width:420px}
@@ -256,6 +263,10 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
   .tab{flex:1;text-align:center;padding-inline:4px}
   .clshead .grow{flex-basis:100%}
   .clshead input[type=date]{flex:1 1 100%}
+  .t.cards tr.blockrow{background:var(--accent-soft);padding:10px}
+  .t.cards tr.blockrow td{background:none;padding:0;border:0}
+  .blkf .blkname,.blkf .blknote{flex:1 1 100%}
+  .blkbtns{width:100%;justify-content:flex-end}
   .t.prog.cards .pickbtn{border-color:var(--field-line);background:var(--field);min-height:44px;padding-inline:12px}
   .pkbar .field{flex:1 1 100%!important;width:auto!important}
   .picklist{max-height:46vh}
@@ -732,6 +743,33 @@ function setOpen(key, v){
 }
 const CHEV = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const DOWN = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+/* Blocks live inline in a day's (or class's) list: {id, kind:'block', name, note}.
+   Every exercise after a block header, up to the next header, belongs to that block. */
+const isBlock = it => it && it.kind === 'block';
+const exOnly = items => (items || []).filter(it => !isBlock(it));
+function groupsOf(items){
+  const out = []; let g = null;
+  (items || []).forEach(it => { if (isBlock(it)) { g = {block:it, items:[]}; out.push(g); } else { if (!g) { g = {block:null, items:[]}; out.push(g); } g.items.push(it); } });
+  return out;
+}
+function scopeOf(ds){
+  if (ds.class) { const hit = findClass(ds.class); return hit ? {items:hit.c.items, set:a => { hit.c.items = a; }, save:() => saveWeek(hit.w)} : null; }
+  const c = cur(), d = c && c.days.find(x => x.id === ds.day); return d ? {items:d.items, set:a => { d.items = a; }, save:() => { ui.draft = null; saveClient(c); }} : null;
+}
+function blockRow(scope, b, items){
+  const gs = groupsOf(items), gi = gs.findIndex(g => g.block === b), up = gi > 0, down = gi < gs.length - 1;
+  const a = 'data-c="block" ' + scope + ' data-block="' + b.id + '"', mv = 'data-act="moveblock" ' + scope + ' data-block="' + b.id + '"', nm = esc(b.name || 'this block');
+  return '<tr class="blockrow"><td colspan="7"><div class="blk"><div class="blkf"><input type="text" class="blkname" id="bn-' + b.id + '" ' + a + ' data-k="name" value="' + esc(b.name) + '" placeholder="Block name (optional)" aria-label="Block name">' +
+    '<input type="text" class="blknote" id="bt-' + b.id + '" ' + a + ' data-k="note" value="' + esc(b.note) + '" placeholder="Notes for this block, for example 3 rounds" aria-label="Notes for ' + nm + '"></div>' +
+    '<div class="blkbtns"><button class="btn quiet small" data-act="pick" ' + scope + ' data-block="' + b.id + '">Add exercises</button>' +
+    '<button class="btn quiet icon" ' + mv + ' data-dir="-1" aria-label="Move ' + nm + ' up"' + (up ? '' : ' disabled') + '>↑</button>' +
+    '<button class="btn quiet icon" ' + mv + ' data-dir="1" aria-label="Move ' + nm + ' down"' + (down ? '' : ' disabled') + '>↓</button>' +
+    cbtn('delb-' + b.id, 'delblock', 'Remove block', scope + ' data-block="' + b.id + '"') + '</div></div></td></tr>';
+}
+function blockLines(items, line){
+  return groupsOf(items).map(g => { const b = g.block, head = b && (b.name || b.note) ? (b.name ? b.name.toUpperCase() + (b.note ? ' (' + b.note + ')' : '') : b.note) + '\n' : '';
+    return head + g.items.map(line).join('\n'); }).filter(Boolean).join('\n\n');
+}
 const peek = names => names.length ? names.slice(0, 4).join(' · ') + (names.length > 4 ? '  +' + (names.length - 4) + ' more' : '') : 'No exercises yet';
 const toggleBtn = (key, def, open, name) => '<button class="btn quiet icon tgl" id="tg-' + key.replace(/[^A-Za-z0-9]/g, '-') + '" data-act="toggle" data-key="' + key + '" data-def="' + (def ? 1 : 0) + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Collapse ' : 'Expand ') + esc(name) + '">' + CHEV + '</button>';
 const pickBtn = (id, attrs, name) => '<button type="button" class="pickbtn" id="' + id + '" data-act="pick" ' + attrs + ' aria-label="Change exercise, now ' + name + '"><span>' + name + '</span>' + DOWN + '</button>';
@@ -746,10 +784,11 @@ function vProgram(c){
     const key = 'd:' + c.id + ':' + d.id, def = di === 0, open = isOpen(key, def);
     h += '<section class="day' + (open ? '' : ' shut') + '"><div class="row"><div class="grow namewrap">' + toggleBtn(key, def, open, d.name) +
       '<input type="text" class="dayname" id="dn-' + d.id + '" data-c="dayname" data-day="' + d.id + '" value="' + esc(d.name) + '" aria-label="Name of this training day"></div>' +
-      '<span class="daysum">' + d.items.length + (d.items.length === 1 ? ' exercise' : ' exercises') + '</span>' + cbtn('delday-' + d.id, 'delday', 'Delete day', 'data-day="' + d.id + '"') + '</div>';
-    if (!open) { h += '<button class="daypeek" data-act="toggle" data-key="' + key + '" data-def="' + (def ? 1 : 0) + '">' + esc(peek(d.items.map(it => exName(it.ex)))) + '</button></section>'; return; }
+      '<span class="daysum">' + exOnly(d.items).length + (exOnly(d.items).length === 1 ? ' exercise' : ' exercises') + '</span>' + cbtn('delday-' + d.id, 'delday', 'Delete day', 'data-day="' + d.id + '"') + '</div>';
+    if (!open) { h += '<button class="daypeek" data-act="toggle" data-key="' + key + '" data-def="' + (def ? 1 : 0) + '">' + esc(peek(exOnly(d.items).map(it => exName(it.ex)))) + '</button></section>'; return; }
     h += '<div class="scroll cardwrap"><table class="t prog cards"><thead><tr><th>Exercise</th><th class="n">Sets</th><th>Reps</th><th class="n">Load, kg</th><th>Rest</th><th>Notes</th><th></th></tr></thead><tbody>';
     d.items.forEach((it, i) => {
+      if (isBlock(it)) { h += blockRow('data-day="' + d.id + '"', it, d.items); return; }
       const a = 'data-c="item" data-day="' + d.id + '" data-item="' + it.id + '"', n = esc(exName(it.ex));
       h += '<tr><td class="c-ex">' + pickBtn('i-' + it.id + '-ex', 'data-day="' + d.id + '" data-item="' + it.id + '"', n) + '</td>' +
         '<td data-l="Sets"><input class="num w-s" type="number" inputmode="decimal" min="1" step="1" id="i-' + it.id + '-sets" ' + a + ' data-k="sets" value="' + esc(it.sets) + '" aria-label="Sets for ' + n + '"></td>' +
@@ -762,7 +801,7 @@ function vProgram(c){
         '<button class="btn quiet icon danger" data-act="delitem" data-day="' + d.id + '" data-item="' + it.id + '" aria-label="Remove ' + n + '">×</button></td></tr>';
     });
     if (!d.items.length) h += '<tr><td colspan="7" class="muted">No exercises in this day yet.</td></tr>';
-    h += '</tbody></table></div><div class="addrow"><button class="btn" id="add-' + d.id + '" data-act="pick" data-day="' + d.id + '">Add exercises</button></div></section>';
+    h += '</tbody></table></div><div class="addrow row"><button class="btn" id="add-' + d.id + '" data-act="pick" data-day="' + d.id + '">Add exercises</button><button class="btn" data-act="addblock" data-day="' + d.id + '">Add a block</button></div></section>';
   });
   return h + '<div><button class="btn" data-act="addday">Add a training day</button></div>';
 }
@@ -777,7 +816,7 @@ function pickTarget(m){
 function paintPick(){
   const m = ui.modal, box = $('pk-list'); if (!m || m.type !== 'pick' || !box) return;
   const tgt = pickTarget(m); if (!tgt) return closeModal();
-  const raw = $('pk-q').value.trim(), q = plainText(raw), g = $('pk-g').value, has = {}; tgt.items.forEach(it => { has[it.ex] = it.id; });
+  const raw = $('pk-q').value.trim(), q = plainText(raw), g = $('pk-g').value, has = {}; exOnly(tgt.items).forEach(it => { has[it.ex] = it.id; });
   const all = Object.keys(S.exercises), ids = all.filter(id => (!g || groupOf(id) === g) && (!q || plainText(exName(id)).includes(q)));
   const groups = GROUPS.concat(all.map(groupOf).filter((x, i, a) => !GROUPS.includes(x) && a.indexOf(x) === i));
   let h = '', n = 0;
@@ -790,9 +829,10 @@ function paintPick(){
 }
 function pickApply(ex){
   const m = ui.modal; if (!m || m.type !== 'pick') return; const tgt = pickTarget(m); if (!tgt) return closeModal();
+  const put = it => { let at = tgt.items.length; if (m.block) { const b = tgt.items.findIndex(x => x.id === m.block); if (b >= 0) { at = b + 1; while (at < tgt.items.length && !isBlock(tgt.items[at])) at++; } } tgt.items.splice(at, 0, it); };
   if (m.item) { const it = tgt.items.find(i => i.id === m.item); if (it) it.ex = ex; }
-  else if (m.cls) tgt.items.push({id:uid(), ex, reps:'', time:'', load:'', rest:'', note:''});
-  else { const p = liftSeries(tgt.c, ex); tgt.items.push({id:uid(), ex, sets:3, reps:'10', load:p.length ? p[p.length - 1].y : null, rest:'', note:''}); }
+  else if (m.cls) put({id:uid(), ex, reps:'', time:'', load:'', rest:'', note:''});
+  else { const p = liftSeries(tgt.c, ex); put({id:uid(), ex, sets:3, reps:'10', load:p.length ? p[p.length - 1].y : null, rest:'', note:''}); }
   if (m.cls) saveWeek(tgt.hit.w); else { ui.draft = null; saveClient(tgt.c); }
   if (m.item) { closeModal(); render(); return; }
   toast(exName(ex) + ' added'); render();
@@ -803,7 +843,7 @@ function newDraft(c, dayId){
   let day = c.days.find(d => d.id === dayId);
   if (!day && c.days.length) { const last = c.sessions.slice().sort((a, b) => a.date < b.date ? -1 : 1).pop(); const i = last ? c.days.findIndex(d => d.id === last.dayId) : -1; day = c.days[(i + 1) % c.days.length]; }
   return {cid:c.id, date:today(), dayId:day ? day.id : '', fee:c.rate || 0, note:'', weight:'', sync:true,
-    entries:(day ? day.items : []).map(it => ({ex:it.ex, sets:it.sets, reps:it.reps, load:it.load, plan:target(it)}))};
+    entries:(day ? exOnly(day.items) : []).map(it => ({ex:it.ex, sets:it.sets, reps:it.reps, load:it.load, plan:target(it)}))};
 }
 function vLog(c){
   if (!c.days.length) return '<div class="empty"><h2 class="h">Build the program first</h2><p>A session is logged against one of the client\'s training days.</p><button class="btn" data-act="sub" data-sub="program">Go to the program</button></div>';
@@ -938,8 +978,8 @@ function vExercises(){
     '<p class="hint">Client programs and classes both pick from this list. Renaming an exercise here renames it everywhere.</p>' + packButton();
   if (!ids.length) return h + '<div class="empty"><h2 class="h">The library is empty</h2><p>Add the exercises you use, then build programs from them.</p></div>';
   const used = {}, logged = {}, inClass = {};
-  Object.values(S.weeks).forEach(w => (w.classes || []).forEach(c => c.items.forEach(it => { inClass[it.ex] = 1; })));
-  Object.values(S.clients).forEach(c => { const seen = {}; c.days.forEach(d => d.items.forEach(it => { if (!seen[it.ex]) { seen[it.ex] = 1; used[it.ex] = (used[it.ex] || 0) + 1; } }));
+  Object.values(S.weeks).forEach(w => (w.classes || []).forEach(c => exOnly(c.items).forEach(it => { inClass[it.ex] = 1; })));
+  Object.values(S.clients).forEach(c => { const seen = {}; c.days.forEach(d => exOnly(d.items).forEach(it => { if (!seen[it.ex]) { seen[it.ex] = 1; used[it.ex] = (used[it.ex] || 0) + 1; } }));
     c.sessions.forEach(s => s.entries.forEach(e => { logged[e.ex] = (logged[e.ex] || 0) + 1; })); });
   const plain = t => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), grp = id => S.exercises[id].group || 'Other';
   const present = GROUPS.concat(ids.map(grp).filter((g, i, a) => !GROUPS.includes(g) && a.indexOf(g) === i)).filter(g => ids.some(id => grp(id) === g));
@@ -1043,10 +1083,11 @@ function classCard(c, date, def){
     '<span class="times"><input type="time" id="cs-' + c.id + '" ' + a + ' data-k="start" value="' + esc(c.start) + '" aria-label="Start time of ' + esc(c.name) + '"><span>to</span>' +
     '<input type="time" id="ce-' + c.id + '" ' + a + ' data-k="end" value="' + esc(c.end) + '" aria-label="End time of ' + esc(c.name) + '"></span>' +
     '<span class="clsbtns"><button class="btn small quiet" data-act="dupclass" data-class="' + c.id + '">Duplicate</button>' + cbtn('delc-' + c.id, 'delclass', 'Delete', 'data-class="' + c.id + '"') + '</span></div>';
-  if (!open) return h + '<button class="daypeek" data-act="toggle" data-key="' + key + '" data-def="' + (def ? 1 : 0) + '">' + esc((c.note ? c.note + '  ·  ' : '') + peek(c.items.map(it => exName(it.ex)))) + '</button></section>';
+  if (!open) return h + '<button class="daypeek" data-act="toggle" data-key="' + key + '" data-def="' + (def ? 1 : 0) + '">' + esc((c.note ? c.note + '  ·  ' : '') + peek(exOnly(c.items).map(it => exName(it.ex)))) + '</button></section>';
   h += '<input type="text" id="co-' + c.id + '" ' + a + ' data-k="note" value="' + esc(c.note) + '" placeholder="Format or notes, for example: 4 rounds for time" aria-label="Format or notes for ' + esc(c.name) + '">' +
     '<div class="scroll cardwrap"><table class="t prog cards"><thead><tr><th>Exercise</th><th>Reps</th><th>Time</th><th>Weight</th><th>Rest</th><th>Notes</th><th></th></tr></thead><tbody>';
   c.items.forEach((it, i) => {
+    if (isBlock(it)) { h += blockRow('data-class="' + c.id + '"', it, c.items); return; }
     const b = 'data-c="citem" data-class="' + c.id + '" data-item="' + it.id + '"', n = esc(exName(it.ex)), mv = 'data-class="' + c.id + '" data-item="' + it.id + '"';
     h += '<tr><td class="c-ex">' + pickBtn('ci-' + it.id + '-ex', mv, n) + '</td>' +
       Object.keys(L).map(k => '<td data-l="' + L[k] + '"><input class="' + (k === 'reps' || k === 'load' ? 'w-l' : 'w-m') + '" type="text" id="ci-' + it.id + '-' + k + '" ' + b + ' data-k="' + k + '" value="' + esc(it[k]) + '" aria-label="' + L[k] + ' for ' + n + '"></td>').join('') +
@@ -1056,8 +1097,22 @@ function classCard(c, date, def){
       '<button class="btn quiet icon danger" data-act="delcitem" ' + mv + ' aria-label="Remove ' + n + '">×</button></td></tr>';
   });
   if (!c.items.length) h += '<tr><td colspan="7" class="muted">No exercises in this class yet.</td></tr>';
-  return h + '</tbody></table></div><div class="addrow"><button class="btn" id="cadd-' + c.id + '" data-act="pick" data-class="' + c.id + '">Add exercises</button></div></section>';
+  return h + '</tbody></table></div><div class="addrow row"><button class="btn" id="cadd-' + c.id + '" data-act="pick" data-class="' + c.id + '">Add exercises</button><button class="btn" data-act="addblock" data-class="' + c.id + '">Add a block</button></div></section>';
 }
+/* Table rows for a PDF: exercises, with a full-width title row (and a note row) where a block starts. */
+function pdfRows(items, cols, fill, row){
+  const out = [];
+  groupsOf(items).forEach(g => {
+    const b = g.block;
+    if (b && (b.name || b.note)) {
+      if (b.name) out.push([{content:b.name, colSpan:cols, styles:{fontStyle:'bold', fontSize:10, fillColor:fill, cellPadding:{top:7, bottom:b.note ? 2 : 7, left:8, right:8}}}]);
+      if (b.note) out.push([{content:b.note, colSpan:cols, styles:{fontSize:9, textColor:[84,84,94], fillColor:fill, cellPadding:{top:b.name ? 1 : 7, bottom:7, left:8, right:8}}}]);
+    } else if (b && out.length) out.push([{content:'', colSpan:cols, styles:{fillColor:[255,255,255], minCellHeight:8, cellPadding:0}}]);
+    g.items.forEach(it => out.push(row(it)));
+  });
+  return out;
+}
+
 /* The class PDF is deliberately plain: black and grey, no logo, no brand colour. */
 async function buildClassPdf(list, from, to){
   const doc = new window.jspdf.jsPDF({unit:'pt', format:'a4'});
@@ -1081,11 +1136,11 @@ async function buildClassPdf(list, from, to){
     if (c.note) { const lines = doc.splitTextToSize(c.note, W - 2 * M); y += 15; doc.setFont(body, 'normal'); doc.setFontSize(10); doc.setTextColor.apply(doc, INK2); doc.text(lines, M, y); y += (lines.length - 1) * 12; }
     const right = t => ({content:t, styles:{halign:'right'}});
     doc.autoTable({startY:y + 9, margin:{left:M, right:M, bottom:56, top:M + 6}, theme:'plain', rowPageBreak:'avoid',
-      head:[[right('#'), 'Exercise', 'Reps', 'Time', 'Weight', 'Rest', 'Notes']],
-      body:c.items.map((it, i) => [i + 1, exName(it.ex), it.reps || '', it.time || '', it.load || '', it.rest || '', it.note || '']),
+      head:[['Exercise', 'Reps', 'Time', 'Weight', 'Rest', 'Notes']],
+      body:pdfRows(c.items, 6, [228,228,232], it => [exName(it.ex), it.reps || '', it.time || '', it.load || '', it.rest || '', it.note || '']),
       styles:{font:body, fontStyle:'normal', fontSize:9.5, textColor:INK, cellPadding:{top:6, bottom:6, left:8, right:8}, valign:'middle', overflow:'linebreak', lineWidth:0},
       headStyles:{fillColor:HEAD, textColor:[255,255,255], font:body, fontStyle:'bold', fontSize:8.5}, alternateRowStyles:{fillColor:SOFT},
-      columnStyles:{0:{cellWidth:26, halign:'right', textColor:INK2}, 1:{cellWidth:138, fontStyle:'bold'}, 2:{cellWidth:62}, 3:{cellWidth:54}, 4:{cellWidth:84}, 5:{cellWidth:50}, 6:{cellWidth:'auto', textColor:INK2}},
+      columnStyles:{0:{cellWidth:156, fontStyle:'bold'}, 1:{cellWidth:66}, 2:{cellWidth:58}, 3:{cellWidth:88}, 4:{cellWidth:54}, 5:{cellWidth:'auto', textColor:INK2}},
       didParseCell:d => { if (d.section === 'head') d.cell.styles.textColor = [255,255,255]; }});
     y = doc.lastAutoTable.finalY + 28;
   });
@@ -1210,7 +1265,7 @@ function renderModal(){
   } else if (m.type === 'pick') {
     const tgt = pickTarget(m); if (!tgt) { ui.modal = null; $('modal').innerHTML = ''; return; }
     const all = Object.keys(S.exercises), groups = GROUPS.concat(all.map(groupOf).filter((x, i, a) => !GROUPS.includes(x) && a.indexOf(x) === i)).filter(g => all.some(id => groupOf(id) === g));
-    title = m.item ? 'Change the exercise' : 'Add exercises to ' + esc(tgt.label);
+    const blk = m.block && tgt.items.find(x => x.id === m.block); title = m.item ? 'Change the exercise' : 'Add exercises to ' + esc(blk ? (blk.name || 'this block') : tgt.label);
     body = '<div class="row pkbar"><label class="field grow"><span>Search</span><input type="search" id="pk-q" data-c="pkq" placeholder="Type a name, for example press" autocomplete="off"></label>' +
       '<label class="field"><span>Group</span><select id="pk-g" data-c="pkg"><option value="">All groups</option>' + groups.map(g => '<option>' + esc(g) + '</option>').join('') + '</select></label></div>' +
       '<div class="picklist" id="pk-list"></div>' +
@@ -1260,7 +1315,7 @@ function goalFields(){
   else if (t === 'weight') st.value = st.dataset.w || ''; else st.value = '';
 }
 function programText(c){
-  return c.days.map(d => d.name.toUpperCase() + '\n' + d.items.map((it, i) => (i + 1) + '. ' + exName(it.ex) + ': ' + target(it) + (it.rest ? ', rest ' + it.rest : '') + (it.note ? ' (' + it.note + ')' : '')).join('\n')).join('\n\n');
+  return c.days.map(d => d.name.toUpperCase() + '\n' + blockLines(d.items, it => '- ' + exName(it.ex) + ': ' + target(it) + (it.rest ? ', rest ' + it.rest : '') + (it.note ? ' (' + it.note + ')' : ''))).join('\n\n');
 }
 function fail(msg){ const e = $('m-err'); if (e) { e.textContent = msg; e.hidden = false; } }
 
@@ -1324,6 +1379,7 @@ document.addEventListener('change', ev => {
       render(); return; }
     if (f === 'name') { if (!el.value.trim()) return; cl.name = el.value.trim(); } else cl[f] = el.value.trim();
     saveWeek(hit.w); if (f === 'start') render(); }
+  else if (k === 'block') { const sc = scopeOf(el.dataset), b = sc && sc.items.find(x => x.id === el.dataset.block); if (!b) return; b[el.dataset.k] = el.value.trim(); sc.save(); }
   else if (k === 'citem') { const hit = findClass(el.dataset.class), it = hit && hit.c.items.find(i => i.id === el.dataset.item); if (!it) return; it[el.dataset.k] = el.value.trim(); saveWeek(hit.w); }
   else if (k === 'range') { if (!el.value) return;
     if (el.dataset.k === 'from') { ui.from = el.value; if (ui.to < ui.from) ui.to = ui.from; } else { ui.to = el.value; if (ui.to < ui.from) ui.from = ui.to; }
@@ -1417,8 +1473,16 @@ function act(name, d, el){
     case 'toggle': setOpen(d.key, !isOpen(d.key, d.def === '1')); break;
     case 'alldays': c.days.forEach(x => setOpen('d:' + c.id + ':' + x.id, d.v === '1')); break;
     case 'allcls': classesIn(ui.from, ui.to).forEach(e => setOpen('c:' + e.c.id, d.v === '1')); break;
-    case 'pick': return openModal({type:'pick', day:d.day || null, cls:d.class || null, item:d.item || null});
+    case 'pick': return openModal({type:'pick', day:d.day || null, cls:d.class || null, item:d.item || null, block:d.block || null});
     case 'pickit': return pickApply(d.ex);
+    case 'addblock': { const sc = scopeOf(d); if (!sc) return; const nb = {id:uid(), kind:'block', name:'', note:''}; sc.items.push(nb); sc.save(); render(); const f = $('bn-' + nb.id); if (f) f.focus(); return; }
+    case 'delblock': { const sc = scopeOf(d); if (!sc) return; sc.set(sc.items.filter(x => x.id !== d.block)); sc.save(); break; }
+    case 'moveblock': { const sc = scopeOf(d); if (!sc) return; const gs = groupsOf(sc.items), i = gs.findIndex(g => g.block && g.block.id === d.block), j = i + (+d.dir);
+      if (i < 0 || j < 0 || j >= gs.length) return;
+      /* Exercises that sit above every block get their own unnamed block, so they stay together when a block moves past them. */
+      if (!gs[j].block) gs[j].block = {id:uid(), kind:'block', name:'', note:''};
+      const t = gs[i]; gs[i] = gs[j]; gs[j] = t;
+      sc.set([].concat.apply([], gs.map(g => (g.block ? [g.block] : []).concat(g.items)))); sc.save(); break; }
     case 'picknew': { const name = $('pk-q').value.trim(); if (!name) return; const id = uid(); S.exercises[id] = {name, group:$('pk-g').value || 'Other'}; saveExercises(); return pickApply(id); }
     case 'delday': c.days = c.days.filter(x => x.id !== d.day); ui.draft = null; saveClient(c); break;
     case 'delitem': { const day = c.days.find(x => x.id === d.day); day.items = day.items.filter(i => i.id !== d.item); ui.draft = null; saveClient(c); break; }
@@ -1468,7 +1532,7 @@ async function buildPdf(c){
   let body = 'helvetica', disp = 'helvetica';
   try { pdfFonts().forEach(f => { doc.addFileToVFS(f[0], f[1]); doc.addFont(f[0], f[2], f[3]); }); body = 'Body'; disp = 'Body'; } catch (e) {}
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 42, s = S.settings;
-  const INK = [10,10,11], INK2 = [84,84,94], LINE = [214,216,222], ACC = [61,123,255], ACCT = [36,88,214], SOFT = [243,244,247];
+  const INK = [10,10,11], INK2 = [84,84,94], LINE = [214,216,222], ACC = [61,123,255], ACCT = [36,88,214], SOFT = [243,244,247], BLK = [226,232,246];
   doc.setFillColor.apply(doc, INK); doc.rect(0, 0, W, 76, 'F'); doc.setFillColor.apply(doc, ACC); doc.rect(0, 76, W, 4, 'F');
   let drawn = false, lw = 150; try { if (window.BRAND && BRAND.logo) { lw = 32 * BRAND.ratio; doc.addImage(BRAND.logo, 'PNG', (W - lw) / 2, 22, lw, 32); drawn = true; } } catch (e) {}
   if (!drawn) { doc.setFont(disp, 'bold'); doc.setFontSize(24); doc.setTextColor(255, 255, 255); doc.text('enakoma', W / 2, 48, {align:'center'}); }
@@ -1490,9 +1554,9 @@ async function buildPdf(c){
     doc.setFont(disp, 'bold'); doc.setFontSize(15); doc.setTextColor.apply(doc, INK); doc.text(t, M, y); };
   c.days.forEach(d => {
     title(d.name, d.items.length);
-    table([right('#'), 'Exercise', right('Sets'), 'Reps', right('Load'), 'Rest', 'Notes'],
-      d.items.map((it, i) => [i + 1, exName(it.ex), it.sets, it.reps, it.load != null && it.load !== '' ? fnum(it.load) + ' kg' : 'Body', it.rest || '', it.note || '']),
-      {0:{cellWidth:26, halign:'right', textColor:INK2}, 1:{cellWidth:150, fontStyle:'bold'}, 2:{cellWidth:40, halign:'right'}, 3:{cellWidth:84}, 4:{cellWidth:56, halign:'right'}, 5:{cellWidth:54}, 6:{cellWidth:'auto', textColor:INK2}});
+    table(['Exercise', right('Sets'), 'Reps', right('Load'), 'Rest', 'Notes'],
+      pdfRows(d.items, 6, BLK, it => [exName(it.ex), it.sets, it.reps, it.load != null && it.load !== '' ? fnum(it.load) + ' kg' : 'Body', it.rest || '', it.note || '']),
+      {0:{cellWidth:168, fontStyle:'bold'}, 1:{cellWidth:44, halign:'right'}, 2:{cellWidth:90}, 3:{cellWidth:60, halign:'right'}, 4:{cellWidth:58}, 5:{cellWidth:'auto', textColor:INK2}});
   });
   if (c.goals.length) {
     title('Your goals', c.goals.length);
