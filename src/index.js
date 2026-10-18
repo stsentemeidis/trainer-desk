@@ -287,7 +287,7 @@ async function gmail(request, env, url, who, action) {
   const m = request.method;
   if (action === "status" && m === "GET") {
     if (appReady(env)) return json({ configured: true, connected: true, email: env.GMAIL_ADDRESS, mode: "app" });
-    if (!gmailReady(env)) return json({ configured: false });
+    if (!gmailReady(env)) return json({ configured: false, missing: [appPassword(env) ? "" : "GMAIL_APP_PASSWORD", env.GMAIL_ADDRESS ? "" : "GMAIL_ADDRESS"].filter(Boolean) });
     const saved = await readGmail(env);
     return json({ configured: true, connected: !!(saved && saved.refresh), email: saved ? saved.email : "" });
   }

@@ -1238,15 +1238,15 @@ function renderModal(){
     const ok = c.days.length > 0, g = net.gmail;
     const gline = LOCAL ? 'Sending works on the live site, not from a file on this computer.'
       : !g ? 'Checking Gmail…'
-      : !g.configured ? 'Sending through Gmail is not set up for this site yet.'
+      : !g.configured ? 'Sending is not set up yet: ' + (g.missing && g.missing.length ? 'Cloudflare has no ' + g.missing.join(' or ') + ' for this site.' : 'the site could not confirm the Gmail settings.')
       : g.connected ? 'Sends from ' + esc(g.email || 'your Gmail') + ', with the PDF attached. It also appears in that Gmail\'s Sent folder.'
       : 'Connect a Gmail account once, then programs go out from it with the PDF attached.';
-    const send = LOCAL || (g && !g.configured) ? '' : '<button class="btn primary" id="e-send" data-act="' + (g && !g.connected ? 'gconnect' : 'gsend') + '"' + (ok && g ? '' : ' disabled') + '>' + (g && !g.connected ? 'Connect Gmail' : 'Send via Gmail') + '</button>';
+    const ready = !LOCAL && g && g.configured, send = '<button class="btn primary" id="e-send" data-act="' + (ready && !g.connected ? 'gconnect' : 'gsend') + '"' + (ok && ready ? '' : ' disabled') + '>' + (ready && !g.connected ? 'Connect Gmail' : 'Send') + '</button>';
     body = '<label class="field"><span>To</span><input type="email" id="e-to" multiple value="' + esc(c.email || '') + '" placeholder="name@example.com" autocomplete="email"></label>' +
       '<label class="field"><span>Subject</span><input type="text" id="e-subject" value="' + esc(subject) + '"></label>' +
       '<label class="field"><span>Message</span><textarea id="e-body" rows="10">' + esc(text) + '</textarea></label>' +
       '<p class="hint" id="e-gline">' + gline + '</p><p class="err" id="m-err" hidden></p>' +
-      '<div class="row mailbtns"><button class="btn" data-act="close">Cancel</button><span class="grow"></span><button class="btn" data-act="pdf"' + (ok ? '' : ' disabled') + '>Download PDF</button>' + send + '</div>';
+      '<div class="row mailbtns"><button class="btn" data-act="close">Cancel</button><span class="grow"></span>' + send + '</div>';
   }
   $('modal').innerHTML = '<div class="modal-back"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="m-title"><h2 class="h" id="m-title">' + title + '</h2>' + body + '</div></div>';
   if (m.type === 'goal') goalFields();
