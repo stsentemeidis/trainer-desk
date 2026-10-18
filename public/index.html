@@ -1218,12 +1218,16 @@ function renderModal(){
     const who = S.settings.trainer || S.settings.business || 'Enakoma';
     const subject = 'Your training program from ' + (S.settings.business || 'Enakoma');
     const text = 'Hi ' + c.name.split(' ')[0] + ',\n\nHere is your current training program. The PDF is attached, and the same plan is below so you can read it on your phone.\n\n' + programText(c) + '\n\nTell me if anything feels off and we will adjust it.\n\n' + who;
-    body = '<ol class="steps"><li>Download the PDF.</li><li>Open a new email with the link at the bottom, or copy the fields below.</li><li>Attach the PDF and send.</li></ol>' +
-      '<div><button class="btn primary" data-act="pdf"' + (c.days.length ? '' : ' disabled') + '>Download PDF</button></div>' +
+    const share = canShareFiles(), ok = c.days.length > 0;
+    body = (share
+      ? '<p class="hint">Share the PDF straight into the Gmail app: pick Gmail in the list that opens, then check the address and send.</p>' +
+        '<div class="row"><button class="btn primary" id="e-share" data-act="sharepdf"' + (ok ? '' : ' disabled') + '>Share PDF to Gmail</button><button class="btn" data-act="gmail"' + (ok ? '' : ' disabled') + '>Open Gmail in the browser</button></div>'
+      : '<p class="hint">This downloads the PDF and opens a Gmail message with the address, subject and text filled in. Attach the downloaded PDF, then send.</p>' +
+        '<div class="row"><button class="btn primary" data-act="gmail"' + (ok ? '' : ' disabled') + '>Download PDF and open Gmail</button></div>') +
       '<div class="field"><span>To</span><div class="copybox"><input type="text" id="e-to" readonly value="' + esc(c.email || '') + '" placeholder="No email saved for this client"><button class="btn" data-act="copy" data-from="e-to">Copy</button></div></div>' +
       '<div class="field"><span>Subject</span><div class="copybox"><input type="text" id="e-subject" value="' + esc(subject) + '"><button class="btn" data-act="copy" data-from="e-subject">Copy</button></div></div>' +
       '<div class="field"><span>Message</span><div class="copybox"><textarea id="e-body" rows="12">' + esc(text) + '</textarea><button class="btn" data-act="copy" data-from="e-body">Copy</button></div></div>' +
-      '<div class="row"><p class="hint grow">' + (c.email ? '<a href="mailto:' + esc(c.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text) + '">Open in my mail app</a>. It fills in the address and the message. A link cannot attach files, so add the PDF yourself.' : 'Add an email address under Edit details.') + '</p><button class="btn" data-act="close">Done</button></div>';
+      '<div class="row"><p class="hint grow">' + (c.email ? 'Using another mail program? <a href="mailto:' + esc(c.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text) + '">Open it here</a> and attach the PDF yourself.' : 'No email address is saved for this client. Add one under Edit details, or type it in Gmail.') + '</p><button class="btn" data-act="close">Done</button></div>';
   }
   $('modal').innerHTML = '<div class="modal-back"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="m-title"><h2 class="h" id="m-title">' + title + '</h2>' + body + '</div></div>';
   if (m.type === 'goal') goalFields();
@@ -1367,7 +1371,10 @@ function act(name, d, el){
     case 'settings': return openModal({type:'settings'});
     case 'm-client': return openModal({type:'client', cid:d.id || null});
     case 'm-payment': case 'm-charge': return openModal({type:name.slice(2), cid:d.id || ui.cid});
-    case 'm-weight': case 'm-goal': case 'm-email': return openModal({type:name.slice(2), cid:ui.cid});
+    case 'm-weight': case 'm-goal': return openModal({type:name.slice(2), cid:ui.cid});
+    case 'm-email': openModal({type:'email', cid:ui.cid}); preparePdf(c); return;
+    case 'gmail': return openGmail(S.clients[ui.modal.cid], el);
+    case 'sharepdf': return sharePdf(S.clients[ui.modal.cid], el);
     case 'm-exercise': return openModal({type:'exercise'});
     case 'close': return closeModal();
     case 'loadexamples': return loadExamples();
@@ -1478,6 +1485,38 @@ async function buildPdf(c){
     doc.text([s.business || 'Enakoma', c.name].filter(Boolean).join('  ·  '), M, H - 26); doc.text('Page ' + p + ' of ' + pages, W - M, H - 26, {align:'right'}); }
   return doc.output('arraybuffer');
 }
+/* --- sending the program by email --- */
+function canShareFiles(){
+  try { return !!(navigator.canShare && navigator.share && navigator.canShare({files:[new File(['x'], 'x.pdf', {type:'application/pdf'})]})); } catch (e) { return false; }
+}
+const pdfName = c => 'Program - ' + c.name + ' - ' + today() + '.pdf';
+const mailFields = () => ({to:($('e-to') || {}).value || '', su:($('e-subject') || {}).value || '', body:($('e-body') || {}).value || ''});
+function gmailUrl(f){
+  const u = b => 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(f.to) + '&su=' + encodeURIComponent(f.su) + '&body=' + encodeURIComponent(b);
+  let url = u(f.body);
+  if (url.length > 7500) url = u(f.body.split('\n\n')[0] + '\n\nYour training program is in the attached PDF.\n\n' + (S.settings.trainer || S.settings.business || 'Enakoma'));
+  return url;
+}
+let mailPdf = null;
+async function preparePdf(c){
+  mailPdf = null; if (!c || !c.days.length || !window.jspdf) return;
+  try { const buf = await buildPdf(c); mailPdf = {cid:c.id, file:new File([buf], pdfName(c), {type:'application/pdf'})}; } catch (e) {}
+}
+async function openGmail(c, btn){
+  const f = mailFields(), win = window.open(gmailUrl(f), '_blank', 'noopener');
+  if (!win) toast('Your browser blocked the Gmail tab. Allow pop-ups for this site and try again.');
+  if (canShareFiles()) return;
+  if (mailPdf && mailPdf.cid === c.id) { saveFile(mailPdf.file.name, mailPdf.file); return; }
+  await exportPdf(c, btn);
+}
+async function sharePdf(c, btn){
+  const f = mailFields();
+  if (!mailPdf || mailPdf.cid !== c.id) { const old = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing…'; await preparePdf(c); btn.disabled = false; btn.textContent = old; }
+  if (!mailPdf) return toast('The PDF could not be created.');
+  try { await navigator.share({files:[mailPdf.file], title:f.su, text:f.body}); }
+  catch (e) { if (e && e.name === 'AbortError') return; if (e && e.name === 'NotAllowedError') return toast('Tap Share PDF to Gmail again.'); toast('Sharing did not work here. Use Open Gmail in the browser instead.'); }
+}
+
 async function exportPdf(c, btn){
   if (!c) return;
   if (!window.jspdf) return toast('The PDF tool did not load. Reload the page and try again.');
