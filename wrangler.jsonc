@@ -23,6 +23,9 @@
   // Which Cloudflare Access sign-in this site accepts. These are identifiers, not passwords.
   "vars": {
     "ACCESS_TEAM_DOMAIN": "nameless-tree-bc8b.cloudflareaccess.com",
-    "ACCESS_AUD": "272a21fe08064bf4c12e0ec5016afa43b83f475dab4a68007f84e535321eed93"
+    "ACCESS_AUD": "272a21fe08064bf4c12e0ec5016afa43b83f475dab4a68007f84e535321eed93",
+    // Google sign-in used to send programs through Gmail. Not a password.
+    // The matching client secret is NOT here: it is a Secret named GOOGLE_CLIENT_SECRET in the Worker's settings.
+    "GOOGLE_CLIENT_ID": "PASTE_GOOGLE_CLIENT_ID"
   }
 }

@@ -151,6 +151,7 @@ input.w-s{width:64px}input.w-m{width:96px}input.w-l{width:130px}
 .pkitem em{font-style:normal;font-size:12.5px;color:var(--good);font-weight:600;white-space:nowrap}
 .pkitem.new{color:var(--link);font-weight:600}
 @media (prefers-reduced-motion:reduce){ .tgl svg{transition:none} }
+.mailbtns{align-items:center}
 .exfilter{align-items:flex-end}
 .exfilter .field:not(.grow){width:230px}
 .exfilter .grow{max-width:420px}
@@ -275,6 +276,8 @@ details.values summary{cursor:pointer;color:var(--ink-2);font-size:13.5px;width:
   .modal-back{padding:12px}
   .modal{padding:18px}
   .modal form > .row .btn{flex:1}
+  .mailbtns .grow{display:none}
+  .mailbtns .btn{flex:1 1 40%}
   .toast{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
   .savebar{position:sticky;bottom:0;z-index:3;background:var(--bg);border-top:1px solid var(--line);margin-inline:-16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
   .savebar .btn{width:100%}
@@ -446,6 +449,7 @@ async function call(method, path, body, rev){
   if (r.status === 404) return {kind:'locked', error:'no_api', reason:''};
   if (r.status === 401 || r.status === 403) return {kind:'expired'};
   if (r.status === 413) return {kind:'too_large'};
+  if (j && j.error) return {kind:'error', error:j.error, status:r.status};
   return {kind:'offline'};
 }
 async function pump(){
@@ -504,6 +508,17 @@ async function load(first){
   } else if (JSON.stringify(snapshot()) !== before) { ui.draft = null; render(); }
   paintSync();
 }
+function afterGmail(){
+  if (location.hash !== '#gmail-connected') return;
+  history.replaceState(null, '', location.pathname);
+  let back = {}; try { back = JSON.parse(ls.get('trainer-desk:after-gmail') || '{}') || {}; } catch (e) {} ls.del('trainer-desk:after-gmail');
+  gmailStatus().then(() => {
+    toast('Gmail connected' + (net.gmail && net.gmail.email ? ' as ' + net.gmail.email : ''));
+    const c = back.cid && S.clients[back.cid]; if (!c) return;
+    ui.tab = 'clients'; ui.cid = c.id; ui.sub = 'program'; render();
+    openModal({type:'email', cid:c.id}); preparePdf(c); if (back.to && $('e-to')) $('e-to').value = back.to;
+  });
+}
 function moveOnline(){
   const old = ui.migrate; if (!old) return;
   if (!net.revs.settings && old.settings) { S.settings = Object.assign({}, DEFAULTS, old.settings); saveSettings(); }
@@ -546,7 +561,7 @@ function boot(){
     window.addEventListener('storage', e => { if (e.key !== KEY || !e.newValue) return; try { adopt(JSON.parse(e.newValue)); ui.draft = null; if (!ui.modal) render(); } catch (err) {} });
     return;
   }
-  render(); load(true);
+  render(); load(true).then(afterGmail);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - net.loadedAt > 20000) load(false); });
   window.addEventListener('online', () => { if (waiting()) pump(); });
   window.addEventListener('beforeunload', e => { if (waiting() && (net.offline || net.expired) && !ls.get(UKEY)) { e.preventDefault(); e.returnValue = ''; } });
@@ -1212,22 +1227,26 @@ function renderModal(){
       '<div class="stack" style="border-top:1px solid var(--line);padding-top:14px"><span class="label">Backup</span><p class="hint">' + (LOCAL ? 'Everything is stored in this browser on this device.' : 'Everything is saved online as you work.') + ' A backup is one file with all clients, programs, sessions and payments. Keep it somewhere private.' + (lastBackup() ? ' Last backup ' + fmtDate(lastBackup()) + '.' : '') + '</p>' +
       '<div class="row"><button class="btn" data-act="backup">Download a backup</button><button class="btn" data-act="pickrestore">Restore from a backup</button><input type="file" id="m-restore" accept=".json,application/json" data-c="restore" hidden></div>' +
       '<div class="row" id="restore-box" hidden><p class="err grow" id="restore-msg"></p><button class="btn small armed" data-act="restore-go">Replace everything</button></div></div>' +
+      (!LOCAL && net.gmail && net.gmail.configured ? '<div class="row" style="border-top:1px solid var(--line);padding-top:14px"><p class="hint grow">' + (net.gmail.connected ? 'Programs are sent from ' + esc(net.gmail.email) + '.' : 'No Gmail connected for sending programs.') + '</p>' +
+        (net.gmail.connected ? '<button class="btn small" data-act="gdisconnect">Disconnect Gmail</button>' : '<button class="btn small" data-act="gconnect">Connect Gmail</button>') + '</div>' : '') +
       (!LOCAL && net.user ? '<div class="row" style="border-top:1px solid var(--line);padding-top:14px"><p class="hint grow">Signed in as ' + esc(net.user) + '</p><a class="btn small" href="/cdn-cgi/access/logout" style="text-decoration:none;color:var(--ink)">Sign out</a></div>' : '');
   } else if (m.type === 'email') {
     wide = true; title = 'Email the program to ' + esc(c.name.split(' ')[0]);
     const who = S.settings.trainer || S.settings.business || 'Enakoma';
     const subject = 'Your training program from ' + (S.settings.business || 'Enakoma');
     const text = 'Hi ' + c.name.split(' ')[0] + ',\n\nHere is your current training program. The PDF is attached, and the same plan is below so you can read it on your phone.\n\n' + programText(c) + '\n\nTell me if anything feels off and we will adjust it.\n\n' + who;
-    const share = canShareFiles(), ok = c.days.length > 0;
-    body = (share
-      ? '<p class="hint">Share the PDF straight into the Gmail app: pick Gmail in the list that opens, then check the address and send.</p>' +
-        '<div class="row"><button class="btn primary" id="e-share" data-act="sharepdf"' + (ok ? '' : ' disabled') + '>Share PDF to Gmail</button><button class="btn" data-act="gmail"' + (ok ? '' : ' disabled') + '>Open Gmail in the browser</button></div>'
-      : '<p class="hint">This downloads the PDF and opens a Gmail message with the address, subject and text filled in. Attach the downloaded PDF, then send.</p>' +
-        '<div class="row"><button class="btn primary" data-act="gmail"' + (ok ? '' : ' disabled') + '>Download PDF and open Gmail</button></div>') +
-      '<div class="field"><span>To</span><div class="copybox"><input type="text" id="e-to" readonly value="' + esc(c.email || '') + '" placeholder="No email saved for this client"><button class="btn" data-act="copy" data-from="e-to">Copy</button></div></div>' +
-      '<div class="field"><span>Subject</span><div class="copybox"><input type="text" id="e-subject" value="' + esc(subject) + '"><button class="btn" data-act="copy" data-from="e-subject">Copy</button></div></div>' +
-      '<div class="field"><span>Message</span><div class="copybox"><textarea id="e-body" rows="12">' + esc(text) + '</textarea><button class="btn" data-act="copy" data-from="e-body">Copy</button></div></div>' +
-      '<div class="row"><p class="hint grow">' + (c.email ? 'Using another mail program? <a href="mailto:' + esc(c.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text) + '">Open it here</a> and attach the PDF yourself.' : 'No email address is saved for this client. Add one under Edit details, or type it in Gmail.') + '</p><button class="btn" data-act="close">Done</button></div>';
+    const ok = c.days.length > 0, g = net.gmail;
+    const gline = LOCAL ? 'Sending works on the live site, not from a file on this computer.'
+      : !g ? 'Checking Gmail…'
+      : !g.configured ? 'Sending through Gmail is not set up for this site yet.'
+      : g.connected ? 'Sends from ' + esc(g.email || 'your Gmail') + ', with the PDF attached. It also appears in that Gmail\'s Sent folder.'
+      : 'Connect a Gmail account once, then programs go out from it with the PDF attached.';
+    const send = LOCAL || (g && !g.configured) ? '' : '<button class="btn primary" id="e-send" data-act="' + (g && !g.connected ? 'gconnect' : 'gsend') + '"' + (ok && g ? '' : ' disabled') + '>' + (g && !g.connected ? 'Connect Gmail' : 'Send via Gmail') + '</button>';
+    body = '<label class="field"><span>To</span><input type="email" id="e-to" multiple value="' + esc(c.email || '') + '" placeholder="name@example.com" autocomplete="email"></label>' +
+      '<label class="field"><span>Subject</span><input type="text" id="e-subject" value="' + esc(subject) + '"></label>' +
+      '<label class="field"><span>Message</span><textarea id="e-body" rows="10">' + esc(text) + '</textarea></label>' +
+      '<p class="hint" id="e-gline">' + gline + '</p><p class="err" id="m-err" hidden></p>' +
+      '<div class="row mailbtns"><button class="btn" data-act="close">Cancel</button><span class="grow"></span><button class="btn" data-act="pdf"' + (ok ? '' : ' disabled') + '>Download PDF</button>' + send + '</div>';
   }
   $('modal').innerHTML = '<div class="modal-back"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="m-title"><h2 class="h" id="m-title">' + title + '</h2>' + body + '</div></div>';
   if (m.type === 'goal') goalFields();
@@ -1368,13 +1387,15 @@ function act(name, d, el){
     case 'classpdf': return exportClassPdf(el);
     case 'addpack': { const n = growLibrary(true); toast(n + (n === 1 ? ' exercise' : ' exercises') + ' added to the library'); break; }
     case 'step': { const e = ui.draft && ui.draft.entries[+d.i]; if (!e) return; e.load = Math.max(0, r2((+e.load || 0) + (+d.d))); const inp = $('lg-' + d.i + '-load'); if (inp) inp.value = fnum(e.load); return; }
-    case 'settings': return openModal({type:'settings'});
+    case 'settings': openModal({type:'settings'}); gmailStatus(); return;
     case 'm-client': return openModal({type:'client', cid:d.id || null});
     case 'm-payment': case 'm-charge': return openModal({type:name.slice(2), cid:d.id || ui.cid});
     case 'm-weight': case 'm-goal': return openModal({type:name.slice(2), cid:ui.cid});
-    case 'm-email': openModal({type:'email', cid:ui.cid}); preparePdf(c); return;
-    case 'gmail': return openGmail(S.clients[ui.modal.cid], el);
-    case 'sharepdf': return sharePdf(S.clients[ui.modal.cid], el);
+    case 'm-email': openModal({type:'email', cid:ui.cid}); preparePdf(c); gmailStatus(); return;
+    case 'gsend': return gmailSend(S.clients[ui.modal.cid], el);
+    case 'gconnect': return gmailConnect();
+    case 'gdisconnect': if (el.dataset.step !== '2') { el.dataset.step = '2'; el.textContent = 'Confirm disconnect'; el.classList.add('armed'); return; }
+      call('POST', '/api/gmail/disconnect', {}).then(() => { net.gmail = Object.assign({}, net.gmail, {connected:false, email:''}); renderModal(); toast('Gmail disconnected'); }); return;
     case 'm-exercise': return openModal({type:'exercise'});
     case 'close': return closeModal();
     case 'loadexamples': return loadExamples();
@@ -1485,37 +1506,43 @@ async function buildPdf(c){
     doc.text([s.business || 'Enakoma', c.name].filter(Boolean).join('  ·  '), M, H - 26); doc.text('Page ' + p + ' of ' + pages, W - M, H - 26, {align:'right'}); }
   return doc.output('arraybuffer');
 }
-/* --- sending the program by email --- */
-function canShareFiles(){
-  try { return !!(navigator.canShare && navigator.share && navigator.canShare({files:[new File(['x'], 'x.pdf', {type:'application/pdf'})]})); } catch (e) { return false; }
-}
+/* --- sending the program through Gmail (via the storage service) --- */
 const pdfName = c => 'Program - ' + c.name + ' - ' + today() + '.pdf';
-const mailFields = () => ({to:($('e-to') || {}).value || '', su:($('e-subject') || {}).value || '', body:($('e-body') || {}).value || ''});
-function gmailUrl(f){
-  const u = b => 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(f.to) + '&su=' + encodeURIComponent(f.su) + '&body=' + encodeURIComponent(b);
-  let url = u(f.body);
-  if (url.length > 7500) url = u(f.body.split('\n\n')[0] + '\n\nYour training program is in the attached PDF.\n\n' + (S.settings.trainer || S.settings.business || 'Enakoma'));
-  return url;
-}
 let mailPdf = null;
 async function preparePdf(c){
   mailPdf = null; if (!c || !c.days.length || !window.jspdf) return;
-  try { const buf = await buildPdf(c); mailPdf = {cid:c.id, file:new File([buf], pdfName(c), {type:'application/pdf'})}; } catch (e) {}
+  try { const buf = await buildPdf(c); mailPdf = {cid:c.id, buf}; } catch (e) {}
 }
-async function openGmail(c, btn){
-  const f = mailFields(), win = window.open(gmailUrl(f), '_blank', 'noopener');
-  if (!win) toast('Your browser blocked the Gmail tab. Allow pop-ups for this site and try again.');
-  if (canShareFiles()) return;
-  if (mailPdf && mailPdf.cid === c.id) { saveFile(mailPdf.file.name, mailPdf.file); return; }
-  await exportPdf(c, btn);
+async function gmailStatus(){
+  if (LOCAL) return;
+  const r = await call('GET', '/api/gmail/status');
+  net.gmail = r.kind === 'ok' ? r.data : {configured:true, connected:false, email:'', failed:true};
+  if (ui.modal && (ui.modal.type === 'email' || ui.modal.type === 'settings')) keepFields(renderModal);
 }
-async function sharePdf(c, btn){
-  const f = mailFields();
-  if (!mailPdf || mailPdf.cid !== c.id) { const old = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing…'; await preparePdf(c); btn.disabled = false; btn.textContent = old; }
-  if (!mailPdf) return toast('The PDF could not be created.');
-  try { await navigator.share({files:[mailPdf.file], title:f.su, text:f.body}); }
-  catch (e) { if (e && e.name === 'AbortError') return; if (e && e.name === 'NotAllowedError') return toast('Tap Share PDF to Gmail again.'); toast('Sharing did not work here. Use Open Gmail in the browser instead.'); }
+function keepFields(fn){
+  const v = {}; ['e-to','e-subject','e-body'].forEach(id => { if ($(id)) v[id] = $(id).value; });
+  fn(); Object.keys(v).forEach(id => { if ($(id)) $(id).value = v[id]; });
 }
+function gmailConnect(){
+  const m = ui.modal; ls.set('trainer-desk:after-gmail', JSON.stringify({cid:m && m.cid, to:$('e-to') ? $('e-to').value : ''}));
+  location.href = '/api/gmail/connect';
+}
+async function gmailSend(c, btn){
+  const to = $('e-to').value.trim(), err = $('m-err'), show = t => { err.textContent = t; err.hidden = false; };
+  err.hidden = true;
+  if (!to || !$('e-to').checkValidity()) return show('Enter a valid email address, for example name@example.com.');
+  if (!mailPdf || mailPdf.cid !== c.id) await preparePdf(c);
+  if (!mailPdf) return show('The PDF could not be created, so nothing was sent.');
+  const old = btn.textContent; btn.disabled = true; btn.textContent = 'Sending…';
+  const r = await call('POST', '/api/gmail/send', {to, subject:$('e-subject').value, text:$('e-body').value, filename:pdfName(c),
+    fromName:S.settings.trainer || S.settings.business || 'Enakoma', pdf:b64(new Uint8Array(mailPdf.buf))});
+  btn.disabled = false; btn.textContent = old;
+  if (r.kind === 'ok') { closeModal(); toast('Sent to ' + to); return; }
+  if (r.kind === 'conflict' || (r.data && r.data.error === 'gmail_reconnect')) { net.gmail = Object.assign({}, net.gmail, {connected:false}); keepFields(renderModal); return show('Gmail needs to be connected again. Press Connect Gmail, then send.'); }
+  const e = r.error || (r.data && r.data.error);
+  show(e === 'bad_address' ? 'That email address does not look right.' : r.kind === 'too_large' ? 'The PDF is too large to send.' : r.kind === 'expired' ? 'Your sign-in to the site has ended. Reload the page and try again.' : r.kind === 'offline' ? 'No connection. Nothing was sent; try again.' : 'Gmail did not accept the message. Nothing was sent; try again in a moment.');
+}
+function b64(bytes){ let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
 
 async function exportPdf(c, btn){
   if (!c) return;

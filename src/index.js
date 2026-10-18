@@ -52,6 +52,7 @@ async function api(request, env, url) {
 
   await ensureSchema(env.DB);
   const path = url.pathname.slice(5);
+  if (path.startsWith("gmail/")) return gmail(request, env, url, who, path.slice(6));
 
   if (path === "state" && method === "GET") {
     const { results } = await env.DB.prepare("SELECT key, rev, body FROM docs").all();
@@ -131,11 +132,177 @@ async function api(request, env, url) {
 function ensureSchema(db) {
   if (!schemaReady) {
     schemaReady = db
-      .prepare("CREATE TABLE IF NOT EXISTS docs (key TEXT PRIMARY KEY, body TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, updated_by TEXT NOT NULL)")
-      .run()
+      .batch([
+        db.prepare("CREATE TABLE IF NOT EXISTS docs (key TEXT PRIMARY KEY, body TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, updated_by TEXT NOT NULL)"),
+        // Never returned by /api/state: holds the Gmail sending permission, encrypted.
+        db.prepare("CREATE TABLE IF NOT EXISTS secrets (key TEXT PRIMARY KEY, body TEXT NOT NULL, updated_at TEXT NOT NULL)"),
+      ])
       .catch((err) => { schemaReady = null; throw err; });
   }
   return schemaReady;
+}
+
+/* ---------- sending programs through Gmail ----------
+   The trainer connects a Gmail account once (Google sign-in with the "send email" permission).
+   The refresh token is kept encrypted in the secrets table, keyed on the Google client secret,
+   which lives only in the Worker's secret settings. Sending uses the Gmail API from this Worker. */
+
+const GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
+const GMAIL_SCOPE = "openid email https://www.googleapis.com/auth/gmail.send";
+let gmailToken = { at: "", exp: 0, email: "" };
+
+const gmailReady = (env) => !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && !/PASTE/.test(env.GOOGLE_CLIENT_ID));
+const tokenUrl = (env) => env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token";
+const sendUrl = (env) => env.GMAIL_SEND_URL || "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
+
+function b64(bytes) { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
+const utf8 = (t) => new TextEncoder().encode(t);
+const b64url = (bytes) => b64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+async function sealKey(env) {
+  const raw = await crypto.subtle.digest("SHA-256", utf8("enakoma-gmail:" + env.GOOGLE_CLIENT_SECRET));
+  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+async function seal(env, obj) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await sealKey(env), utf8(JSON.stringify(obj))));
+  return b64(iv) + "." + b64(ct);
+}
+async function unseal(env, text) {
+  try {
+    const [a, b] = text.split(".");
+    const iv = Uint8Array.from(atob(a), (c) => c.charCodeAt(0)), ct = Uint8Array.from(atob(b), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, await sealKey(env), ct)));
+  } catch (e) { return null; }
+}
+async function readGmail(env) {
+  const row = await env.DB.prepare("SELECT body FROM secrets WHERE key = 'gmail'").first();
+  return row ? unseal(env, row.body) : null;
+}
+const redirectUri = (url) => url.origin + "/api/gmail/callback";
+
+function page(title, text, back) {
+  const e = (t) => String(t).replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+  return new Response('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + e(title) + '</title>' +
+    '<body style="margin:0;background:#0A0A0B;color:#F4F4F5;font:16px/1.5 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;padding:24px;box-sizing:border-box">' +
+    '<div style="max-width:440px"><h1 style="font-size:22px;margin:0 0 8px">' + e(title) + '</h1><p style="color:#B9B9C1;margin:0 0 20px">' + e(text) + '</p>' +
+    '<a href="' + e(back) + '" style="display:inline-block;background:#3D7BFF;color:#0A0A0B;font-weight:700;padding:10px 18px;border-radius:8px;text-decoration:none">Back to the app</a></div>',
+    { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+}
+
+async function accessToken(env) {
+  if (gmailToken.at && gmailToken.exp > Date.now() + 60000) return gmailToken;
+  const saved = await readGmail(env);
+  if (!saved || !saved.refresh) return null;
+  const res = await fetch(tokenUrl(env), { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET, refresh_token: saved.refresh, grant_type: "refresh_token" }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.access_token) {
+    if (data.error === "invalid_grant") await env.DB.prepare("DELETE FROM secrets WHERE key = 'gmail'").run();
+    return null;
+  }
+  gmailToken = { at: data.access_token, exp: Date.now() + (data.expires_in || 3000) * 1000, email: saved.email };
+  return gmailToken;
+}
+
+function encodeWord(t) { return /^[\x20-\x7e]*$/.test(t) ? t : "=?UTF-8?B?" + b64(utf8(t)) + "?="; }
+function wrap76(t) { return t.replace(/.{1,76}/g, (m) => m + "\r\n"); }
+
+function mime({ from, to, subject, text, filename, pdf }) {
+  const boundary = "enakoma-" + crypto.randomUUID();
+  const safeName = encodeWord(filename.replace(/"/g, ""));
+  const lines = [
+    "From: " + from,
+    "To: " + to.join(", "),
+    "Subject: " + encodeWord(subject),
+    "MIME-Version: 1.0",
+    'Content-Type: multipart/mixed; boundary="' + boundary + '"',
+    "",
+    "--" + boundary,
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrap76(b64(utf8(text))),
+  ];
+  if (pdf) lines.push(
+    "--" + boundary,
+    'Content-Type: application/pdf; name="' + safeName + '"',
+    'Content-Disposition: attachment; filename="' + safeName + "\"; filename*=UTF-8''" + encodeURIComponent(filename),
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrap76(pdf));
+  lines.push("--" + boundary + "--", "");
+  return lines.join("\r\n");
+}
+
+async function gmail(request, env, url, who, action) {
+  const m = request.method;
+  if (action === "status" && m === "GET") {
+    if (!gmailReady(env)) return json({ configured: false });
+    const saved = await readGmail(env);
+    return json({ configured: true, connected: !!(saved && saved.refresh), email: saved ? saved.email : "" });
+  }
+  if (!gmailReady(env)) return json({ error: "gmail_not_configured" }, 503);
+
+  if (action === "connect" && m === "GET") {
+    const state = crypto.randomUUID();
+    const go = new URL(GOOGLE_AUTH);
+    go.search = new URLSearchParams({ client_id: env.GOOGLE_CLIENT_ID, redirect_uri: redirectUri(url), response_type: "code", scope: GMAIL_SCOPE,
+      access_type: "offline", prompt: "consent", include_granted_scopes: "true", state }).toString();
+    return new Response(null, { status: 302, headers: { location: go.toString(), "cache-control": "no-store",
+      "set-cookie": "gm_state=" + state + "; Path=/api/gmail; Max-Age=600; HttpOnly; Secure; SameSite=Lax" } });
+  }
+
+  if (action === "callback" && m === "GET") {
+    const cookie = (request.headers.get("cookie") || "").split(";").map((x) => x.trim()).find((x) => x.startsWith("gm_state="));
+    const expected = cookie ? cookie.slice(9) : "";
+    if (url.searchParams.get("error")) return page("Gmail was not connected", "Google sign-in was cancelled or refused. Nothing changed.", "/");
+    if (!expected || url.searchParams.get("state") !== expected) return page("Gmail was not connected", "The sign-in link expired. Start again from the app.", "/");
+    const res = await fetch(tokenUrl(env), { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ code: url.searchParams.get("code") || "", client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET, redirect_uri: redirectUri(url), grant_type: "authorization_code" }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.refresh_token) return page("Gmail was not connected", "Google did not give permission to send email. Try again and tick the box that allows sending.", "/");
+    if (!String(data.scope || "").includes("gmail.send")) return page("Gmail was not connected", "The permission to send email was not ticked on Google's screen. Try again and allow it.", "/");
+    let email = "";
+    try { email = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(data.id_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)))).email || ""; } catch (e) {}
+    await env.DB.prepare("INSERT INTO secrets (key, body, updated_at) VALUES ('gmail', ?, ?) ON CONFLICT(key) DO UPDATE SET body = excluded.body, updated_at = excluded.updated_at")
+      .bind(await seal(env, { refresh: data.refresh_token, email, by: who.email }), new Date().toISOString()).run();
+    gmailToken = { at: data.access_token || "", exp: Date.now() + (data.expires_in || 0) * 1000, email };
+    return new Response(null, { status: 302, headers: { location: "/#gmail-connected", "cache-control": "no-store",
+      "set-cookie": "gm_state=; Path=/api/gmail; Max-Age=0; HttpOnly; Secure; SameSite=Lax" } });
+  }
+
+  if (action === "disconnect" && m === "POST") {
+    const saved = await readGmail(env);
+    await env.DB.prepare("DELETE FROM secrets WHERE key = 'gmail'").run();
+    gmailToken = { at: "", exp: 0, email: "" };
+    if (saved && saved.refresh && !env.GOOGLE_TOKEN_URL) await fetch("https://oauth2.googleapis.com/revoke?token=" + encodeURIComponent(saved.refresh), { method: "POST" }).catch(() => {});
+    return json({ ok: true });
+  }
+
+  if (action === "send" && m === "POST") {
+    const text = await request.text();
+    if (text.length > 15 * 1024 * 1024) return json({ error: "too_large" }, 413);
+    let b; try { b = JSON.parse(text); } catch (e) { return json({ error: "bad_json" }, 400); }
+    const to = String(b.to || "").split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean);
+    const EMAIL = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[^\s@<>()",;:]+$/;
+    if (!to.length || to.length > 10 || !to.every((x) => EMAIL.test(x))) return json({ error: "bad_address" }, 400);
+    const subject = String(b.subject || "").replace(/[\r\n]+/g, " ").slice(0, 300);
+    const body = String(b.text || "").slice(0, 100000);
+    const pdf = b.pdf ? String(b.pdf).replace(/[^A-Za-z0-9+/=]/g, "") : "";
+    const filename = String(b.filename || "Program.pdf").replace(/[\r\n"\\/]/g, " ").slice(0, 150);
+    const tok = await accessToken(env);
+    if (!tok) return json({ error: "gmail_reconnect" }, 409);
+    const name = String(b.fromName || "").replace(/[\r\n"<>]/g, "").slice(0, 80);
+    const from = name ? '"' + encodeWord(name) + '" <' + tok.email + ">" : tok.email;
+    const raw = b64url(utf8(mime({ from, to, subject, text: body, filename, pdf })));
+    const res = await fetch(sendUrl(env), { method: "POST", headers: { authorization: "Bearer " + tok.at, "content-type": "application/json" }, body: JSON.stringify({ raw }) });
+    if (res.status === 401) { gmailToken = { at: "", exp: 0, email: "" }; return json({ error: "gmail_reconnect" }, 409); }
+    if (!res.ok) { console.error("gmail send failed", res.status, (await res.text()).slice(0, 500)); return json({ error: "gmail_failed", status: res.status }, 502); }
+    return json({ ok: true, from: tok.email, to });
+  }
+
+  return json({ error: "not_found" }, 404);
 }
 
 /* ---------- sign-in check ---------- */
